@@ -8,5 +8,5 @@ void _wendy_nbody_onestep(int, double *, double *, double *,
 			  double *,int *,
 			  int *, double *, double *,
 			  double,
-			  int,int *);
+			  int,int *,int *);
 #endif /* wendy.h */

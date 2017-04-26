@@ -25,7 +25,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 			  double * m, int * sindx,
 			  int * cindx, double * next_tcoll, double * tcoll,
 			  double dt,
-			  int maxcoll, int * err){
+			  int maxcoll, int * err, int * ncoll){
   int cnt_coll,ii, tmpi;
   int c_in_x_indx, c_in_x_next_indx;
   double dv,tdt, dm, tmpd;
@@ -123,6 +123,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   }
   *next_tcoll-= dt;
   free(t);
+  *ncoll= cnt_coll;
   if ( cnt_coll == maxcoll )
     *err= -2;
 }

@@ -48,6 +48,7 @@ _wendy_nbody_onestep_func.argtypes=\
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ctypes.c_double,
      ctypes.c_int,
+     ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int)]
 
 class MyQuadPoly:
@@ -66,7 +67,9 @@ class MyQuadPoly:
             if out < 10.**-10.: return 0.5*(mba+sqD)
             else: return out
 
-def nbody(x,v,m,dt,twopiG=1.,maxcoll=100000,warn_maxcoll=False):
+def nbody(x,v,m,dt,twopiG=1.,
+          maxcoll=100000,warn_maxcoll=False,
+          full_output=False):
     """
     NAME:
        nbody
@@ -80,8 +83,10 @@ def nbody(x,v,m,dt,twopiG=1.,maxcoll=100000,warn_maxcoll=False):
        twopiG= (1.) value of 2 \pi G
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
+       full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
+       + diagnostic info if full_output
     HISTORY:
        2017-04-24 - Written - Bovy (UofT/CCA)
     """
@@ -90,12 +95,16 @@ def nbody(x,v,m,dt,twopiG=1.,maxcoll=100000,warn_maxcoll=False):
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
     a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m)
+    ncoll_c= ctypes.c_int(0)
+    ncoll= 0
     # Simulate the dynamics
     while True:
         _wendy_nbody_onestep_func(len(x),
                                   x,v,a,m,sindx,ctypes.byref(cindx),
                                   ctypes.byref(next_tcoll),
-                                  tcoll,dt,maxcoll,ctypes.byref(err))
+                                  tcoll,dt,maxcoll,
+                                  ctypes.byref(err),ctypes.byref(ncoll_c))
+        ncoll+= ncoll_c.value
         if err.value == -2:
             if warn_maxcoll:
                 warnings.warn("Maximum number of collisions per time step exceeded")
@@ -103,7 +112,10 @@ def nbody(x,v,m,dt,twopiG=1.,maxcoll=100000,warn_maxcoll=False):
                 a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m)
             else:
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
-        yield(x,v)
+        if full_output:
+            yield(x,v,ncoll)
+        else:
+            yield(x,v)
 
 def _setup_arrays(x,v,m):
     sindx= numpy.argsort(x)
