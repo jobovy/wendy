@@ -14,6 +14,6 @@ setup(name='wendy',
       include_package_data=True,
       install_requires=['numpy>=1.7'],
       ext_modules=[Extension('wendy_c',
-                       sources=['wendy/wendy.c'],
+                       sources=['wendy/wendy.c','wendy/bst.c'],
                        libraries=['m'],
                        include_dirs=['wendy/'])])
