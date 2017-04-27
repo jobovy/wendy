@@ -56,7 +56,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     *(sindx+ *cindx+1)= tmpi;
     // track mass and update accelerations
     dm= *(m + c_in_x_next_indx) - *(m + c_in_x_indx);
-    *(a + c_in_x_indx)+= dm;
+    *(a + c_in_x_indx)-= dm;
     *(a + c_in_x_next_indx)-= dm;
     tmpd= *(a + c_in_x_indx);
     *(a + c_in_x_indx)= *(a + c_in_x_next_indx);
