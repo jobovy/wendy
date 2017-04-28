@@ -78,40 +78,40 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       (*(a + c_in_x_next_indx) - *(a + c_in_x_indx));
     if ( tmpd <= 0. ) 
       tmpd= INFINITY;
-    bst_tcoll= bst_deleteNode(bst_tcoll,*(tcoll+*cindx));
+    bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx);
     *(tcoll + *cindx)= *next_tcoll+tmpd;
-    bst_tcoll= bst_insert(bst_tcoll,*cindx,*(tcoll+*cindx));
+    bst_tcoll= bst_forceInsert(bst_tcoll,*cindx,tcoll+*cindx);
     // Abuse the c_in_x_indx and c_in_x_next_indx arrays
     if ( *cindx > 0 ){
       c_in_x_indx= *(sindx+ *cindx-1);
       c_in_x_next_indx= *(sindx+ *cindx);
       tdt= *(t + c_in_x_indx) - *next_tcoll;
-      bst_tcoll= bst_deleteNode(bst_tcoll,*(tcoll+*cindx-1));
+      bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx-1);
       *(tcoll + *cindx -1)= *next_tcoll +
 	_solve_quad_pos(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt * tdt / 2. 
 			- *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
 			*(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
 			- *(v + c_in_x_next_indx),
 			0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
-      bst_tcoll= bst_insert(bst_tcoll,*cindx-1,*(tcoll+*cindx-1));
+      bst_tcoll= bst_forceInsert(bst_tcoll,*cindx-1,tcoll+*cindx-1);
     }
     if ( *cindx < N-2 ){
       c_in_x_indx= *(sindx+ *cindx+2);
       c_in_x_next_indx= *(sindx+ *cindx+1);
       tdt= *(t + c_in_x_indx) - *next_tcoll;
-      bst_tcoll= bst_deleteNode(bst_tcoll,*(tcoll+*cindx+1));
+      bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx+1);
       *(tcoll + *cindx+1)= *next_tcoll +
 	_solve_quad_pos(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt * tdt / 2. 
 			- *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
 			*(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
 			- *(v + c_in_x_next_indx),
 			0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
-      bst_tcoll= bst_insert(bst_tcoll,*cindx+1,*(tcoll+*cindx+1));
+      bst_tcoll= bst_forceInsert(bst_tcoll,*cindx+1,tcoll+*cindx+1);
     }
     // Find minimum
     minNode= bst_minValueNode(bst_tcoll);
     *cindx= minNode->idx;
-    *next_tcoll= minNode->val;
+    *next_tcoll= *minNode->val;
     //printf("Next one %f\n",*next_tcoll);
     //fflush(stdout);
   }
