@@ -244,25 +244,32 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
-def energy(x,v,m,twopiG=1.):
+def energy(x,v,m,twopiG=1.,individual=False):
     """
     NAME:
        energy
     PURPOSE:
-       compute the energy
+       compute the energy of the system or of each particle
     INPUT:
        x - positions [N]
        v - velocities [N]
        m - masses [N]
        twopiG= (1.) value of 2 \pi G
+       individual= (False) if True, return each particle's individual energy (note: individual energies don't add up to the system's energy)
     OUTPUT:
        Energy
     HISTORY:
        2017-04-24 - Written - Bovy (UofT/CCA)
+       2017-05-10 - Added individual energies - Bovy (UofT/CCA)
     """
-    return 0.5*twopiG*numpy.sum(m*numpy.atleast_2d(m).T\
-                                    *numpy.fabs(x-numpy.atleast_2d(x).T))\
-        +numpy.sum(m*v**2./2.)
+    if individual:
+        return twopiG*m\
+            *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(x).T),axis=1)\
+            +m*v**2./2.
+    else:
+        return 0.5*twopiG*numpy.sum(m*numpy.atleast_2d(m).T\
+                                        *numpy.fabs(x-numpy.atleast_2d(x).T))\
+                                        +numpy.sum(m*v**2./2.)
 
 def momentum(v,m):
     """
