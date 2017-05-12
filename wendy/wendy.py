@@ -286,3 +286,23 @@ def momentum(v,m):
        2017-04-24 - Written - Bovy (UofT/CCA)
     """
     return numpy.sum(m*v)
+
+def potential(y,x,v,m,twopiG=1.):
+    """
+    NAME:
+       potential
+    PURPOSE:
+       compute the gravitational potential at a set of points
+    INPUT:
+       y - positions at which to compute the potential
+       x - positions of N-body particles [N]
+       v - velocities of N-body particles [N]
+       m - masses of N-body particles [N]
+       twopiG= (1.) value of 2 \pi G
+    OUTPUT:
+       potential(y)
+    HISTORY:
+       2017-05-12 - Written - Bovy (UofT/CCA)
+    """
+    return twopiG\
+        *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(y).T),axis=1)
