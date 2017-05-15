@@ -10,7 +10,7 @@ def test_energy_conservation():
     E= wendy.energy(x,v,m)
     cnt= 0
     while cnt < 100:
-        tx,tv= g.next()
+        tx,tv= next(g)
         assert numpy.fabs(wendy.energy(tx,tv,m)-E) < 10.**-10., "Energy not conserved during simple N-body integration"
         cnt+= 1
     return None
@@ -24,7 +24,7 @@ def test_energy_conservation_unequalmasses():
     E= wendy.energy(x,v,m)
     cnt= 0
     while cnt < 100:
-        tx,tv= g.next()
+        tx,tv= next(g)
         assert numpy.fabs(wendy.energy(tx,tv,m)-E) < 10.**-10., "Energy not conserved during simple N-body integration"
         cnt+= 1
     return None
@@ -38,7 +38,7 @@ def test_energy_conservation_unequalmasses_python():
     E= wendy.energy(x,v,m)
     cnt= 0
     while cnt < 100:
-        tx,tv= g.next()
+        tx,tv= next(g)
         assert numpy.fabs(wendy.energy(tx,tv,m)-E) < 10.**-10., "Energy not conserved during simple N-body integration"
         cnt+= 1
     return None
@@ -52,7 +52,7 @@ def test_momentum_conservation_unequalmasses():
     p= wendy.momentum(v,m)
     cnt= 0
     while cnt < 100:
-        tx,tv= g.next()
+        tx,tv= next(g)
         assert numpy.fabs(wendy.momentum(tv,m)-p) < 10.**-10., "Momentum not conserved during simple N-body integration"
         cnt+= 1
     return None

@@ -26,8 +26,8 @@ python setup.py install --user
 Use ``wendy.nbody`` to initialize a generator object for initial *(x,v)* with masses *m*. The generator then returns the state of the system at equally-spaced time intervals:
 ```
 g= wendy.nbody(x,v,m,0.05) # delta t = 0.05
-next_x, next_v= g.next() # at t=0.05
-next_x, next_v= g.next() # at t=0.10
+next_x, next_v= next(g) # at t=0.05
+next_x, next_v= next(g) # at t=0.10
 ...
 ```
 A pure Python version of the code is available as ``wendy.nbody_python``.
