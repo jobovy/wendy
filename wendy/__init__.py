@@ -1,1 +1,1 @@
-from wendy import *
+from .wendy import *
