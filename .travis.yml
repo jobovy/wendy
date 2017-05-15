@@ -3,11 +3,13 @@ language: python
 python:
   - "2.7"
   - "3.5"
-addons:
-  apt:
-    packages:
-     - lcov
 before_install:
+ # Install lcov
+ - wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
+ - tar xf lcov_1.11.orig.tar.gz
+ - mkdir $HOME/usr
+ - export PATH=$HOME/usr/bin:$PATH
+ - make -C lcov-1.11/ install PREFIX=$HOME
  #Setup conda for faster installs
  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
  - bash miniconda.sh -b -p $HOME/miniconda
