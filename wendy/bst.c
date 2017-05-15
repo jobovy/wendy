@@ -80,7 +80,7 @@ struct node * bst_minValueNode(struct node * node){
     current = current->left;
   return current;
 }
-// Function to print the tree in order
+// Function to print the tree in order LCOV_EXCL_START
 void bst_inorder(struct node *root){
   if (root != NULL){
     bst_inorder(root->left);
@@ -99,3 +99,4 @@ int bst_nNode(struct node *root){
   }
   return out;
 }
+// LCOV_EXCL_STOP
