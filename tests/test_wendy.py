@@ -56,3 +56,17 @@ def test_momentum_conservation_unequalmasses():
         assert numpy.fabs(wendy.momentum(tv,m)-p) < 10.**-10., "Momentum not conserved during simple N-body integration"
         cnt+= 1
     return None
+
+def test_energy_individual():
+    # Simple test that the individual energies are calculated correctly
+    x= numpy.array([-1.1,0.1,1.3])
+    v= numpy.array([3.,2.,-5.])
+    m= numpy.array([1.,2.,3.])
+    E= wendy.energy(x,v,m,individual=True)
+    assert numpy.fabs(E[0]-m[0]*v[0]**2./2.-m[0]*(m[1]*numpy.fabs(x[0]-x[1])
+                                                  +m[2]*numpy.fabs(x[0]-x[2]))) < 10.**-10
+    assert numpy.fabs(E[1]-m[1]*v[1]**2./2.-m[1]*(m[0]*numpy.fabs(x[0]-x[1])
+                                                  +m[2]*numpy.fabs(x[2]-x[1]))) < 10.**-10
+    assert numpy.fabs(E[2]-m[2]*v[2]**2./2.-m[2]*(m[0]*numpy.fabs(x[0]-x[2])
+                                                  +m[1]*numpy.fabs(x[2]-x[1]))) < 10.**-10
+    return None
