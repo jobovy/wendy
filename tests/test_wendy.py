@@ -70,3 +70,16 @@ def test_energy_individual():
     assert numpy.fabs(E[2]-m[2]*v[2]**2./2.-m[2]*(m[0]*numpy.fabs(x[0]-x[2])
                                                   +m[1]*numpy.fabs(x[2]-x[1]))) < 10.**-10
     return None
+
+def test_potential():
+    # Simple test that the potential is calculated correctly
+    x= numpy.array([-1.1,0.1,1.3])
+    v= numpy.array([3.,2.,-5.])
+    m= numpy.array([1.,2.,3.])
+    y= numpy.arange(-2.,2.5,0.5)
+    p= wendy.potential(y,x,v,m)
+    for ty,tp in zip(y,p):
+        assert numpy.fabs(tp-numpy.sum(m*numpy.fabs(x-ty))) < 10.**-10., 'Potential is computed incorrectly'
+    return None
+                                                                  
+
