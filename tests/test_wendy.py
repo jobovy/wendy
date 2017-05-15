@@ -101,4 +101,21 @@ def test_potential():
         assert numpy.fabs(tp-numpy.sum(m*numpy.fabs(x-ty))) < 10.**-10., 'Potential is computed incorrectly'
     return None
                                                                   
-
+def test_count_ncoll():
+    # Simple test where we know the number of collisions
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
+    g= wendy.nbody(x,v,m,1,full_output=True)
+    tx,tv,ncoll= g.next()
+    assert ncoll == 0, 'Number of collisions in simple 2-body problem is wrong'
+    tx,tv,ncoll= g.next() # collision should have happened now
+    assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
+    # Next collision is at dt = 2sqrt(2) => dt=2.82 ==> t =~ 4.24
+    tx,tv,ncoll= g.next()
+    assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
+    tx,tv,ncoll= g.next()
+    assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
+    tx,tv,ncoll= g.next() # collision should have happened now
+    assert ncoll == 2, 'Number of collisions in simple 2-body problem is wrong'
+    return None
