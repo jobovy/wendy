@@ -3,8 +3,7 @@
 A one-dimensional gravitational N-body code. 
 
 [![Build Status](https://travis-ci.org/jobovy/wendy.svg?branch=master)](https://travis-ci.org/jobovy/wendy)
-[![Coverage Status](https://coveralls.io/repos/github/jobovy/wendy/badge.svg?branch=master)](https://coveralls.io/github/jobovy/wendy?branch=master)
-[![codecov](https://codecov.io/gh/jobovy/wendy/branch/master/graph/badge.svg)](https://codecov.io/gh/jobovy/wendy)
+[![Coverage Status](https://codecov.io/gh/jobovy/wendy/branch/master/graph/badge.svg)](https://codecov.io/gh/jobovy/wendy)
 
 
 ## Overview

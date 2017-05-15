@@ -23,10 +23,7 @@ before_install:
 install:
  - pip install 'coverage==4.1' --force-reinstall # necessary bc of backward incompatible change in 4.2 about combining reports
  - pip install pytest-cov
- - pip install coveralls-merge
- - gem install coveralls-lcov
  - easy_install --upgrade requests
- - easy_install --upgrade coveralls
  - python setup.py build_ext --coverage --inplace
  - python setup.py develop
 script:
@@ -37,9 +34,6 @@ after_success:
  - lcov --capture --base-directory . --directory build/temp.linux-x86_64-2.7/wendy/ --no-external --output-file coverage_full.info
  # Codecov
  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then bash <(curl -s https://codecov.io/bash); fi
- # coveralls: combine, generate json, and upload
- - coveralls-lcov -v -n coverage.info > coverage.c.json
- - coveralls-merge coverage.c.json
 notifications:
   email:
     recipients:
