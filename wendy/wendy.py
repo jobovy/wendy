@@ -50,6 +50,10 @@ _wendy_nbody_onestep_func.argtypes=\
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int)]
+_wendy_solve_quad_pos_func= _lib._solve_quad_pos
+_wendy_solve_quad_pos_func.argtypes=\
+    [ctypes.c_double,ctypes.c_double,ctypes.c_double]
+_wendy_solve_quad_pos_func.restype= ctypes.c_double
 
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
@@ -127,14 +131,12 @@ def _setup_arrays(x,v,m):
     mass_above[0]= 0.
     mass_above= numpy.roll(mass_above,-1)
     a= (mass_above-mass_below)[numpy.argsort(sindx)]
-    # Setup quadratic polynomials to solve for collisions, 
-    # only need to save N-1 differences
-    poly= []
+    # Solve for all collisions, using C code for consistency
+    tcoll= []
     for xi,vi,ai,xii,vii,aii in zip(x[sindx][:-1],v[sindx][:-1],a[sindx][:-1],
                                     x[sindx][1:],v[sindx][1:],a[sindx][1:]):
-        poly.append(MyQuadPoly([xi-xii,vi-vii,(ai-aii)/2.]))
-    # Solve for all collisions
-    tcoll= numpy.array([p.solve() for p in poly])
+        tcoll.append(_wendy_solve_quad_pos_func(xi-xii,vi-vii,(ai-aii)/2.))
+    tcoll= numpy.array(tcoll)
     cindx= ctypes.c_int(numpy.argmin(tcoll))
     next_tcoll= ctypes.c_double(tcoll[cindx])
     # Prepare for C
