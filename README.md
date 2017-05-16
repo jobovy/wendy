@@ -42,3 +42,7 @@ A pure Python version of the code is available as ``wendy.nbody_python``.
 
 <img src="https://cloud.githubusercontent.com/assets/1044876/26030657/e29c9efe-3826-11e7-8419-7bf96d565569.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26030672/1fafa9bc-3827-11e7-9167-16f10bb40b59.gif" width="400">
 
+* A self-gravitating, sech<sup>2</sup> disk: [example notebook](examples/SelfGravitatingSech2Disk.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/SelfGravitatingSech2Disk.ipynb?flush_cache=true))
+
+<img src="https://cloud.githubusercontent.com/assets/1044876/26089385/4b4f491a-39cb-11e7-9709-278162abe5b7.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26089414/850dd7a2-39cb-11e7-9beb-73dbce2c6c4b.gif" width="400">
+
