@@ -50,10 +50,30 @@ _wendy_nbody_onestep_func.argtypes=\
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int)]
+_wendy_nbody_harm_onestep_func= _lib._wendy_nbody_harm_onestep
+_wendy_nbody_harm_onestep_func.argtypes=\
+    [ctypes.c_int,
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.int32,flags=ndarrayFlags),
+     ctypes.POINTER(ctypes.c_int),
+     ctypes.POINTER(ctypes.c_double),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ctypes.c_double,
+     ctypes.c_int,
+     ctypes.POINTER(ctypes.c_int),
+     ctypes.POINTER(ctypes.c_int),
+     ctypes.c_double]
 _wendy_solve_quad_pos_func= _lib._solve_quad_pos
 _wendy_solve_quad_pos_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double]
 _wendy_solve_quad_pos_func.restype= ctypes.c_double
+_wendy_solve_harm_pos_func= _lib._solve_harm_pos
+_wendy_solve_harm_pos_func.argtypes=\
+    [ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
+_wendy_solve_harm_pos_func.restype= ctypes.c_double
 
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
@@ -71,7 +91,7 @@ class MyQuadPoly:
             if out < 10.**-10.: return 0.5*(mba+sqD)
             else: return out
 
-def nbody(x,v,m,dt,twopiG=1.,
+def nbody(x,v,m,dt,twopiG=1.,omega=None,
           maxcoll=100000,warn_maxcoll=False,
           full_output=False):
     """
@@ -85,6 +105,7 @@ def nbody(x,v,m,dt,twopiG=1.,
        m - masses [N]
        dt - time step
        twopiG= (1.) value of 2 \pi G
+       omega= (None) if set, frequency of external harmonic oscillator
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed
@@ -93,27 +114,40 @@ def nbody(x,v,m,dt,twopiG=1.,
        + diagnostic info if full_output
     HISTORY:
        2017-04-24 - Written - Bovy (UofT/CCA)
+       2017-05-23 - Added omega - Bovy (UofT/CCA)
     """
+    # Check omega inpput
+    if not omega is None and omega*dt > numpy.pi/2.:
+        raise ValueError('When omega is set, omega*dt needs to be less than pi/2; please adjust dt')
     # Sort the data in x
     x= copy.copy(x)
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
-    a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m)
+    a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0
     # Simulate the dynamics
     while True:
-        _wendy_nbody_onestep_func(len(x),
-                                  x,v,a,m,sindx,ctypes.byref(cindx),
-                                  ctypes.byref(next_tcoll),
-                                  tcoll,dt,maxcoll,
-                                  ctypes.byref(err),ctypes.byref(ncoll_c))
-        ncoll+= ncoll_c.value
+        if omega is None:
+            _wendy_nbody_onestep_func(len(x),
+                                      x,v,a,m,sindx,ctypes.byref(cindx),
+                                      ctypes.byref(next_tcoll),
+                                      tcoll,dt,maxcoll,
+                                      ctypes.byref(err),ctypes.byref(ncoll_c))
+        else:
+            _wendy_nbody_harm_onestep_func(len(x),
+                                           x,v,a,m,sindx,ctypes.byref(cindx),
+                                           ctypes.byref(next_tcoll),
+                                           tcoll,dt,maxcoll,
+                                           ctypes.byref(err),
+                                           ctypes.byref(ncoll_c),omega)
+            ncoll+= ncoll_c.value
         if err.value == -2:
             if warn_maxcoll:
                 warnings.warn("Maximum number of collisions per time step exceeded")
                 # Re-compute the accelerations
-                a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m)
+                a,sindx,cindx,next_tcoll,tcoll,err=\
+                    _setup_arrays(x,v,m,omega=omega)
             else:
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
         if full_output:
@@ -121,7 +155,7 @@ def nbody(x,v,m,dt,twopiG=1.,
         else:
             yield(x,v)
 
-def _setup_arrays(x,v,m):
+def _setup_arrays(x,v,m,omega=None):
     sindx= numpy.argsort(x)
     # Keep track of amount of mass above and below and compute acceleration
     mass_below= numpy.cumsum(m[sindx])
@@ -135,7 +169,10 @@ def _setup_arrays(x,v,m):
     tcoll= []
     for xi,vi,ai,xii,vii,aii in zip(x[sindx][:-1],v[sindx][:-1],a[sindx][:-1],
                                     x[sindx][1:],v[sindx][1:],a[sindx][1:]):
-        tcoll.append(_wendy_solve_quad_pos_func(xi-xii,vi-vii,(ai-aii)/2.))
+        if omega is None:
+            tcoll.append(_wendy_solve_quad_pos_func(xi-xii,vi-vii,(ai-aii)/2.))
+        else:
+            tcoll.append(_wendy_solve_harm_pos_func(xi-xii,vi-vii,ai-aii,omega))
     tcoll= numpy.array(tcoll)
     cindx= ctypes.c_int(numpy.argmin(tcoll))
     next_tcoll= ctypes.c_double(tcoll[cindx])
@@ -246,7 +283,7 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
-def energy(x,v,m,twopiG=1.,individual=False):
+def energy(x,v,m,twopiG=1.,individual=False,omega=None):
     """
     NAME:
        energy
@@ -264,14 +301,20 @@ def energy(x,v,m,twopiG=1.,individual=False):
        2017-04-24 - Written - Bovy (UofT/CCA)
        2017-05-10 - Added individual energies - Bovy (UofT/CCA)
     """
+    if not omega is None:
+        out= m*omega**2.*x**2./2.
+    else:
+        out= 0.
     if individual:
-        return twopiG*m\
+        return out\
+            +twopiG*m\
             *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(x).T),axis=1)\
             +m*v**2./2.
     else:
-        return 0.5*twopiG*numpy.sum(m*numpy.atleast_2d(m).T\
-                                        *numpy.fabs(x-numpy.atleast_2d(x).T))\
-                                        +numpy.sum(m*v**2./2.)
+        return numpy.sum(out)\
+            +0.5*twopiG*numpy.sum(m*numpy.atleast_2d(m).T\
+                                      *numpy.fabs(x-numpy.atleast_2d(x).T))\
+                                      +numpy.sum(m*v**2./2.)
 
 def momentum(v,m):
     """
