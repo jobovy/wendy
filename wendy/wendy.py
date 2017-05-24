@@ -143,7 +143,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
                                            tcoll,dt,maxcoll,
                                            ctypes.byref(err),
                                            ctypes.byref(ncoll_c),omega)
-            ncoll+= ncoll_c.value
+        ncoll+= ncoll_c.value
         if err.value == -2:
             if warn_maxcoll:
                 warnings.warn("Maximum number of collisions per time step exceeded")
