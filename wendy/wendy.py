@@ -123,6 +123,8 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
     x= copy.copy(x)
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
+    if not omega is None:
+        m/= omega**2.
     a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0

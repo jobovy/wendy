@@ -25,13 +25,12 @@ double _solve_quad_pos(double c0, double c1, double c2){
 }
 double _solve_harm_pos(double c0, double c1, double c2, double omega){
   // Solves for collisions under harmonic motion: A cos(omegaxt+phi)+a/omega^2
-  double A, B, C, out;
-  A= c0-c2/omega/omega;
+  double A, B, out;
+  A= c0-c2;
   B= c1/omega;
-  C= -c2/omega/omega;
-  out= asin(C/sqrt(B*B+A*A))-atan2(A,B);
+  out= -asin(c2/sqrt(B*B+A*A))-atan2(A,B);
   if ( out < 0 ) {
-    out= M_PI-asin(C/sqrt(B*B+A*A))-atan2(A,B);
+    out= M_PI+asin(c2/sqrt(B*B+A*A))-atan2(A,B);
   }
   //printf("Solves equation22? %g,%g,%g,%g\n",A*cos(out),B*sin(out),C,
   // A * cos(out) + B * sin(out) - C);
@@ -161,8 +160,7 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
 			       double omega){
   int cnt_coll,ii, tmpi;
   int c_in_x_indx, c_in_x_next_indx;
-  double tdt, dm, tmpd, cosot, sinot, omega2;
-  omega2= omega*omega;
+  double tdt, dm, tmpd, cosot, sinot;
   struct node* minNode;
   double * t= (double *) malloc ( N * sizeof(double) );
 #pragma omp parallel for schedule(static,chunk) private(ii)
@@ -185,20 +183,20 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     tdt= ( *next_tcoll - *(t + c_in_x_indx) );
     sinot = sin( omega * tdt );
     cosot= sqrt(1.-sinot*sinot);
-    tmpd= ( *(x + c_in_x_indx) - *(a + c_in_x_indx) / omega2 );
+    tmpd= *(x + c_in_x_indx) - *(a + c_in_x_indx);
     *(x + c_in_x_indx)= tmpd * cosot \
       + *(v + c_in_x_indx) / omega * sinot \
-      + *(a + c_in_x_indx) / omega2;
+      + *(a + c_in_x_indx);
     *(v + c_in_x_indx)= -tmpd * omega * sinot \
       + *(v + c_in_x_indx) * cosot;
     *(t + c_in_x_indx)= *next_tcoll;
     tdt= ( *next_tcoll - *(t + c_in_x_next_indx) );
     sinot = sin( omega * tdt );
     cosot= sqrt(1.-sinot*sinot);
-    tmpd= ( *(x + c_in_x_next_indx) - *(a + c_in_x_next_indx) / omega2 );
+    tmpd= *(x + c_in_x_next_indx) - *(a + c_in_x_next_indx);
     *(x + c_in_x_next_indx)= tmpd * cosot \
       + *(v + c_in_x_next_indx) / omega * sinot \
-      + *(a + c_in_x_next_indx) / omega2;
+      + *(a + c_in_x_next_indx) ;
     *(v + c_in_x_next_indx)= -tmpd * omega * sinot \
       + *(v + c_in_x_next_indx) * cosot;
     *(t + c_in_x_next_indx)= *next_tcoll;
@@ -217,8 +215,8 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     *(a + c_in_x_indx)= *(a + c_in_x_next_indx);
     *(a + c_in_x_next_indx)= tmpd;
     // Update collision times, solution for delta x = 0
-    tmpd= omega*(*(v + c_in_x_indx) - *(v + c_in_x_next_indx)) / \
-      (*(a + c_in_x_next_indx) - *(a + c_in_x_indx));
+    tmpd= (*(v + c_in_x_indx) - *(v + c_in_x_next_indx)) / \
+      (*(a + c_in_x_next_indx) - *(a + c_in_x_indx)) / omega;
     tmpd*= tmpd;
     tmpd= (1.-tmpd)/(1.+tmpd);
     tmpd= acos(tmpd)/omega;
@@ -235,10 +233,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
       tdt= *next_tcoll - *(t + c_in_x_indx);
       sinot = sin( omega * tdt );
       cosot= sqrt(1.-sinot*sinot);
-      tmpd= ( *(x + c_in_x_indx) - *(a + c_in_x_indx) / omega2 );
+      tmpd= *(x + c_in_x_indx) - *(a + c_in_x_indx);
       *(x + c_in_x_indx)= tmpd * cosot	   \
-	+ *(v + c_in_x_indx) / omega * sinot	\
-	+ *(a + c_in_x_indx) / omega2;
+	      + *(v + c_in_x_indx) / omega * sinot	\
+	      + *(a + c_in_x_indx);
       *(v + c_in_x_indx)= -tmpd * omega * sinot		\
 	+ *(v + c_in_x_indx) * cosot;
       *(t + c_in_x_indx)= *next_tcoll;
@@ -257,10 +255,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
       tdt= *next_tcoll - *(t + c_in_x_indx);
       sinot = sin( omega * tdt );
       cosot= sqrt(1.-sinot*sinot);
-      tmpd= ( *(x + c_in_x_indx) - *(a + c_in_x_indx) / omega2 );
+      tmpd= *(x + c_in_x_indx) - *(a + c_in_x_indx);
       *(x + c_in_x_indx)= tmpd * cosot	   \
 	+ *(v + c_in_x_indx) / omega * sinot	\
-	+ *(a + c_in_x_indx) / omega2;
+	+ *(a + c_in_x_indx);
       *(v + c_in_x_indx)= -tmpd * omega * sinot	\
 	+ *(v + c_in_x_indx) * cosot;
       *(t + c_in_x_indx)= *next_tcoll;
@@ -287,8 +285,8 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     tdt= dt - *(t+ii);
     sinot = sin( omega * tdt );
     cosot= sqrt(1.-sinot*sinot);
-    tmpd= ( *(x+ii) - *(a+ii) / omega2 );
-    *(x+ii)= tmpd * cosot + *(v+ii) / omega * sinot + *(a+ii) / omega2;
+    tmpd= *(x+ii) - *(a+ii);
+    *(x+ii)= tmpd * cosot + *(v+ii) / omega * sinot + *(a+ii);
     *(v+ii)= -tmpd * omega * sinot + *(v+ii) * cosot;
   }
 #pragma omp parallel for schedule(static,chunk) private(ii)
