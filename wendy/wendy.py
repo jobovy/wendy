@@ -297,6 +297,7 @@ def energy(x,v,m,twopiG=1.,individual=False,omega=None):
        m - masses [N]
        twopiG= (1.) value of 2 \pi G
        individual= (False) if True, return each particle's individual energy (note: individual energies don't add up to the system's energy)
+       omega= (None) if set, frequency of external harmonic oscillator
     OUTPUT:
        Energy
     HISTORY:
@@ -334,7 +335,7 @@ def momentum(v,m):
     """
     return numpy.sum(m*v)
 
-def potential(y,x,v,m,twopiG=1.):
+def potential(y,x,v,m,twopiG=1.,omega=None):
     """
     NAME:
        potential
@@ -346,10 +347,16 @@ def potential(y,x,v,m,twopiG=1.):
        v - velocities of N-body particles [N]
        m - masses of N-body particles [N]
        twopiG= (1.) value of 2 \pi G
+       omega= (None) if set, frequency of external harmonic oscillator
     OUTPUT:
        potential(y)
     HISTORY:
        2017-05-12 - Written - Bovy (UofT/CCA)
     """
-    return twopiG\
+    if not omega is None:
+        out= omega**2.*y**2./2.
+    else:
+        out= 0.
+    return out\
+        +twopiG\
         *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(y).T),axis=1)
