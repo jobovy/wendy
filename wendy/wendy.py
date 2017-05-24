@@ -146,7 +146,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
         ncoll+= ncoll_c.value
         if err.value == -2:
             if warn_maxcoll:
-                warnings.warn("Maximum number of collisions per time step exceeded")
+                warnings.warn("Maximum number of collisions per time step exceeded",RuntimeWarning)
                 # Re-compute the accelerations
                 a,sindx,cindx,next_tcoll,tcoll,err=\
                     _setup_arrays(x,v,m,omega=omega)

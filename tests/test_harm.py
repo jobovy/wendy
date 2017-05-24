@@ -1,5 +1,6 @@
 # test_harm.py: some basic tests of the solution in the presence of a background
 import numpy
+import pytest
 import wendy
 def test_energy_conservation():
     # Test that energy is conserved for a simple problem
@@ -81,3 +82,41 @@ def test_potential():
         assert numpy.fabs(tp-numpy.sum(m*numpy.fabs(x-ty))-omega**2.*ty**2./2.) < 10.**-10., 'Potential is computed incorrectly'
     return None
                                                                   
+def test_omegadt_lt_pi2():
+    # Test that wendy.nbody raises a ValueError when omega x dt > pi/2
+    omega= 1.+10.**-8.
+    dt= numpy.pi/2.
+    with pytest.raises(ValueError) as excinfo:
+        g= wendy.nbody(None,None,None,dt,omega=omega)
+        next(g)
+    assert excinfo.value.message == 'When omega is set, omega*dt needs to be less than pi/2; please adjust dt'
+    return None
+
+def test_maxncoll_error():
+    # Simple test where we know the number of collisions
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    m= numpy.array([1.,1.]) # First collision at t=~sqrt(2)
+    omega= 10.**-2. # to not change the dynamics too much
+    g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,omega=omega)
+    with pytest.raises(RuntimeError) as excinfo:
+        tx,tv,ncoll= next(g)
+    assert excinfo.value.message == 'Maximum number of collisions per time step exceeded'   
+    return None
+
+def test_maxncoll_warn():
+    # Simple test where we know the number of collisions
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    m= numpy.array([1.,1.]) # First collision at t=~sqrt(2)
+    omega= 10.**-2. # to not change the dynamics too much
+    g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,warn_maxcoll=True,
+                   omega=omega)
+    with pytest.warns(RuntimeWarning) as record:
+        tx,tv,ncoll= next(g)
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert record[0].message.args[0] == "Maximum number of collisions per time step exceeded"
+    return None
+

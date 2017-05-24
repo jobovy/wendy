@@ -1,5 +1,6 @@
-# test_wendy.py: some basic tests
+# test_wendy.py: some basic tests of the pure N-body code
 import numpy
+import pytest
 import wendy
 def test_energy_conservation():
     # Test that energy is conserved for a simple problem
@@ -119,3 +120,29 @@ def test_count_ncoll():
     tx,tv,ncoll= next(g) # collision should have happened now
     assert ncoll == 2, 'Number of collisions in simple 2-body problem is wrong'
     return None
+
+def test_maxncoll_error():
+    # Simple test where we know the number of collisions
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
+    g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True)
+    with pytest.raises(RuntimeError) as excinfo:
+        tx,tv,ncoll= next(g)
+    assert excinfo.value.message == 'Maximum number of collisions per time step exceeded'   
+    return None
+
+def test_maxncoll_warn():
+    # Simple test where we know the number of collisions
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
+    g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,warn_maxcoll=True)
+    with pytest.warns(RuntimeWarning) as record:
+        tx,tv,ncoll= next(g)
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert record[0].message.args[0] == "Maximum number of collisions per time step exceeded"
+    return None
+
