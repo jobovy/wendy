@@ -121,7 +121,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
     m= twopiG*copy.copy(m)
     if not omega is None:
         m/= omega**2.
-    a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
+    x,v,m,a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0
     # Simulate the dynamics
@@ -144,7 +144,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
             if warn_maxcoll:
                 warnings.warn("Maximum number of collisions per time step exceeded",RuntimeWarning)
                 # Re-compute the accelerations
-                a,sindx,cindx,next_tcoll,tcoll,err=\
+                x,v,m,a,sindx,cindx,next_tcoll,tcoll,err=\
                     _setup_arrays(x,v,m,omega=omega)
             else:
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
@@ -183,7 +183,7 @@ def _setup_arrays(x,v,m,omega=None):
     m= numpy.require(m,dtype=numpy.float64,requirements=['C','W'])
     sindx= numpy.require(sindx,dtype=numpy.int32,requirements=['C','W'])
     tcoll= numpy.require(tcoll,dtype=numpy.float64,requirements=['C','W'])
-    return (a,sindx,cindx,next_tcoll,tcoll,err)
+    return (x,v,m,a,sindx,cindx,next_tcoll,tcoll,err)
 
 def nbody_python(x,v,m,dt,twopiG=1.):
     """
