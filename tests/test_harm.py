@@ -89,7 +89,7 @@ def test_omegadt_lt_pi2():
     with pytest.raises(ValueError) as excinfo:
         g= wendy.nbody(None,None,None,dt,omega=omega)
         next(g)
-    assert excinfo.value.message == 'When omega is set, omega*dt needs to be less than pi/2; please adjust dt'
+    assert str(excinfo.value) == 'When omega is set, omega*dt needs to be less than pi/2; please adjust dt'
     return None
 
 def test_maxncoll_error():
@@ -101,7 +101,7 @@ def test_maxncoll_error():
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,omega=omega)
     with pytest.raises(RuntimeError) as excinfo:
         tx,tv,ncoll= next(g)
-    assert excinfo.value.message == 'Maximum number of collisions per time step exceeded'   
+    assert str(excinfo.value) == 'Maximum number of collisions per time step exceeded'   
     return None
 
 def test_maxncoll_warn():

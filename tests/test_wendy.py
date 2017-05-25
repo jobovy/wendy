@@ -129,7 +129,7 @@ def test_maxncoll_error():
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True)
     with pytest.raises(RuntimeError) as excinfo:
         tx,tv,ncoll= next(g)
-    assert excinfo.value.message == 'Maximum number of collisions per time step exceeded'   
+    assert str(excinfo.value) == 'Maximum number of collisions per time step exceeded'   
     return None
 
 def test_maxncoll_warn():
@@ -156,12 +156,12 @@ def test_notracermasses_error():
     g= wendy.nbody(x,v,m,2)
     with pytest.raises(ValueError) as excinfo:
         tx,tv= next(g)
-    assert excinfo.value.message == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
+    assert str(excinfo.value) == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
     # Also test tiny
     m= numpy.array([1.,10.**-10.])
     g= wendy.nbody(x,v,m,2)
     with pytest.raises(ValueError) as excinfo:
         tx,tv= next(g)
-    assert excinfo.value.message == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
+    assert str(excinfo.value) == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
     return None
 
