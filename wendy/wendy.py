@@ -66,14 +66,14 @@ _wendy_nbody_harm_onestep_func.argtypes=\
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int),
      ctypes.c_double]
-_wendy_solve_quad_pos_func= _lib._solve_quad_pos
-_wendy_solve_quad_pos_func.argtypes=\
+_wendy_solve_coll_quad_func= _lib._solve_coll_quad
+_wendy_solve_coll_quad_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double]
-_wendy_solve_quad_pos_func.restype= ctypes.c_double
-_wendy_solve_harm_pos_func= _lib._solve_harm_pos
-_wendy_solve_harm_pos_func.argtypes=\
+_wendy_solve_coll_quad_func.restype= ctypes.c_double
+_wendy_solve_coll_harm_func= _lib._solve_coll_harm
+_wendy_solve_coll_harm_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
-_wendy_solve_harm_pos_func.restype= ctypes.c_double
+_wendy_solve_coll_harm_func.restype= ctypes.c_double
 
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
@@ -175,9 +175,9 @@ def _setup_arrays(x,v,m,omega=None):
     for xi,vi,ai,xii,vii,aii in zip(x[sindx][:-1],v[sindx][:-1],a[sindx][:-1],
                                     x[sindx][1:],v[sindx][1:],a[sindx][1:]):
         if omega is None:
-            tcoll.append(_wendy_solve_quad_pos_func(xi-xii,vi-vii,(ai-aii)/2.))
+            tcoll.append(_wendy_solve_coll_quad_func(xi-xii,vi-vii,(ai-aii)/2.))
         else:
-            tcoll.append(_wendy_solve_harm_pos_func(xi-xii,vi-vii,ai-aii,omega))
+            tcoll.append(_wendy_solve_coll_harm_func(xi-xii,vi-vii,ai-aii,omega))
     tcoll= numpy.array(tcoll)
     cindx= ctypes.c_int(numpy.argmin(tcoll))
     next_tcoll= ctypes.c_double(tcoll[cindx])

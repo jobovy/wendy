@@ -6,24 +6,13 @@
 #include <math.h>
 #include <wendy.h>
 #include <bst.h>
-double _solve_quad_pos(double c0, double c1, double c2){
+double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
-  double ca, mba, sqD, out;
-  ca= c0/c2;
+  double mba;
   mba= -c1/c2;
-  if ( ca >= 0. && mba < 0. )
-    return INFINITY;
-  sqD= sqrt ( mba * mba - 4. * ca);
-  if ( ca <= 0.){
-    return 0.5 * ( mba + sqD );
-  }
-  out= 0.5 * (mba - sqD );
-  if ( out < 1.E-16 )
-    return 0.5 * ( mba + sqD );
-  else
-    return out;	     
+  return 0.5 * ( mba + sqrt ( mba * mba - 4. * c0/c2) );
 }
-double _solve_harm_pos(double c0, double c1, double c2, double omega){
+double _solve_coll_harm(double c0, double c1, double c2, double omega){
   // Solves for collisions under harmonic motion: A cos(omegaxt+phi)+a/omega^2
   double A, B, out;
   A= c0-c2;
@@ -91,8 +80,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     //fflush(stdout);
     tmpd= 2.* (*(v + c_in_x_indx) - *(v + c_in_x_next_indx)) / 
       (*(a + c_in_x_next_indx) - *(a + c_in_x_indx));
-    if ( tmpd <= 0. ) 
-      tmpd= INFINITY;
     bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx);
     *(tcoll + *cindx)= *next_tcoll+tmpd;
     bst_tcoll= bst_forceInsert(bst_tcoll,*cindx,tcoll+*cindx);
@@ -103,11 +90,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       tdt= *(t + c_in_x_indx) - *next_tcoll;
       bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx-1);
       *(tcoll + *cindx -1)= *next_tcoll +
-	_solve_quad_pos(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt * tdt / 2. 
-			- *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
-			*(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
-			- *(v + c_in_x_next_indx),
-			0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
+	_solve_coll_quad(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt*tdt / 2. 
+			 - *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
+			 *(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
+			 - *(v + c_in_x_next_indx),
+			 0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
       bst_tcoll= bst_forceInsert(bst_tcoll,*cindx-1,tcoll+*cindx-1);
     }
     if ( *cindx < N-2 ){
@@ -116,11 +103,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       tdt= *(t + c_in_x_indx) - *next_tcoll;
       bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx+1);
       *(tcoll + *cindx+1)= *next_tcoll +
-	_solve_quad_pos(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt * tdt / 2. 
-			- *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
-			*(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
-			- *(v + c_in_x_next_indx),
-			0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
+	_solve_coll_quad(*(x + c_in_x_indx) + *(a+c_in_x_indx) * tdt*tdt / 2. 
+			 - *(v+c_in_x_indx) * tdt - *(x + c_in_x_next_indx),
+			 *(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt
+			 - *(v + c_in_x_next_indx),
+			 0.5*(*(a + c_in_x_indx) - *(a + c_in_x_next_indx)));
       bst_tcoll= bst_forceInsert(bst_tcoll,*cindx+1,tcoll+*cindx+1);
     }
     // Find minimum
@@ -242,10 +229,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
       *(t + c_in_x_indx)= *next_tcoll;
       bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx-1);
       *(tcoll + *cindx -1)= *next_tcoll +
-	_solve_harm_pos(*(x + c_in_x_indx) - *(x + c_in_x_next_indx),
-			*(v + c_in_x_indx) - *(v + c_in_x_next_indx),
-			*(a + c_in_x_indx) - *(a + c_in_x_next_indx),
-			omega);
+	_solve_coll_harm(*(x + c_in_x_indx) - *(x + c_in_x_next_indx),
+			 *(v + c_in_x_indx) - *(v + c_in_x_next_indx),
+			 *(a + c_in_x_indx) - *(a + c_in_x_next_indx),
+			 omega);
       bst_tcoll= bst_forceInsert(bst_tcoll,*cindx-1,tcoll+*cindx-1);
     }
     if ( *cindx < N-2 ){
@@ -264,10 +251,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
       *(t + c_in_x_indx)= *next_tcoll;
       bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx+1);
       *(tcoll + *cindx+1)= *next_tcoll +
-	_solve_harm_pos(*(x + c_in_x_indx) - *(x + c_in_x_next_indx),
-			*(v + c_in_x_indx) - *(v + c_in_x_next_indx),
-			*(a + c_in_x_indx) - *(a + c_in_x_next_indx),
-			omega);
+	_solve_coll_harm(*(x + c_in_x_indx) - *(x + c_in_x_next_indx),
+			 *(v + c_in_x_indx) - *(v + c_in_x_next_indx),
+			 *(a + c_in_x_indx) - *(a + c_in_x_next_indx),
+			 omega);
       bst_tcoll= bst_forceInsert(bst_tcoll,*cindx+1,tcoll+*cindx+1);
     }
     // Find minimum
