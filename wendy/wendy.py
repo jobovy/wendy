@@ -81,15 +81,8 @@ class MyQuadPoly:
         self.coeff= coeff
     def solve(self):
         coeff= self.coeff
-        ca= coeff[0]/coeff[2]
         mba= -coeff[1]/coeff[2]
-        if ca >= 0. and mba < 0.: return numpy.inf
-        sqD= numpy.sqrt(mba**2.-4.*ca)
-        if ca <= 0.: return 0.5*(mba+sqD)
-        else:
-            out= 0.5*(mba-sqD)
-            if out < 10.**-10.: return 0.5*(mba+sqD)
-            else: return out
+        return 0.5*(mba+numpy.sqrt(mba**2.-4.*coeff[0]/coeff[2]))
 
 def nbody(x,v,m,dt,twopiG=1.,omega=None,
           maxcoll=100000,warn_maxcoll=False,
