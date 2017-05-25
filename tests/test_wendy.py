@@ -146,3 +146,22 @@ def test_maxncoll_warn():
     assert record[0].message.args[0] == "Maximum number of collisions per time step exceeded"
     return None
 
+def test_notracermasses_error():
+    # Test that an exception is raised when some of the masses are zero 
+    # (or just tiny)
+    x= numpy.array([-1.,1.])
+    v= numpy.array([0.,0.])
+    # Test zero
+    m= numpy.array([1.,0.])
+    g= wendy.nbody(x,v,m,2)
+    with pytest.raises(ValueError) as excinfo:
+        tx,tv= next(g)
+    assert excinfo.value.message == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
+    # Also test tiny
+    m= numpy.array([1.,10.**-10.])
+    g= wendy.nbody(x,v,m,2)
+    with pytest.raises(ValueError) as excinfo:
+        tx,tv= next(g)
+    assert excinfo.value.message == 'Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs'   
+    return None
+

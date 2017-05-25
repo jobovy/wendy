@@ -119,6 +119,9 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
     # Check omega inpput
     if not omega is None and omega*dt > numpy.pi/2.:
         raise ValueError('When omega is set, omega*dt needs to be less than pi/2; please adjust dt')
+    # Check that no masses are tiny, because these cause issues
+    if numpy.any(m < numpy.median(m)*10.**-8.):
+        raise ValueError('Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs')
     # Sort the data in x
     x= copy.copy(x)
     v= copy.copy(v)
