@@ -281,6 +281,59 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
+def _approx_force(x,m,twopiG):
+    # Sort the data in x
+    sindx= numpy.argsort(x)
+    i= numpy.arange(len(x)) # to un-sort
+    m= m[sindx]
+    i= i[sindx]
+    # Keep track of amount of mass above and below and compute acceleration
+    mass_below= numpy.cumsum(m)
+    mass_below[-1]= 0.
+    mass_below= numpy.roll(mass_below,1)
+    mass_above= numpy.cumsum(m[::-1])[::-1]
+    mass_above[0]= 0.
+    mass_above= numpy.roll(mass_above,-1)
+    return twopiG*(mass_above-mass_below)[numpy.argsort(i)]
+
+def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
+    """
+    NAME:
+       nbody_approx
+    PURPOSE:
+       run an N-body simulation in 1D, pure Python version of approximate algo
+    INPUT:
+       x - positions [N]
+       v - velocities [N]
+       m - masses [N]
+       dt - output time step
+       nleap - number of leapfrog steps / output time step
+       twopiG= (1.) value of 2 \pi G
+    OUTPUT:
+       Generator: each iteration returns (x,v) at equally-spaced time intervals
+    HISTORY:
+       2017-06-03 - Written - Bovy (UofT/CCA)
+    """
+    # Leapfrog integration
+    dt_leap= dt/nleap
+    while True:
+        for jj in range(nleap): #loop over number of sub-intervals
+            #This could be made faster by combining the drifts
+            #drift
+            q12= leapfrog_leapq(x,v,dt_leap/2.)
+            #kick
+            force= _approx_force(q12,m,twopiG)
+            v= leapfrog_leapp(v,dt_leap,force)
+            #drift
+            x= leapfrog_leapq(q12,v,dt_leap/2.)
+        yield (x,v)
+
+def leapfrog_leapq(q,p,dt):
+    return q+dt*p
+
+def leapfrog_leapp(p,dt,force):
+    return p+dt*force
+
 def energy(x,v,m,twopiG=1.,individual=False,omega=None):
     """
     NAME:
