@@ -426,10 +426,14 @@ def energy(x,v,m,twopiG=1.,individual=False,omega=None):
             *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(x).T),axis=1)\
             +m*v**2./2.
     else:
+        sindx= numpy.argsort(x)
+        mass_below= numpy.roll(numpy.cumsum(m[sindx]),1)
+        mass_below[0]= 0.
+        xmass_below= numpy.roll(numpy.cumsum((m*x)[sindx]),1)
+        xmass_below[0]= 0.
         return numpy.sum(out)\
-            +0.5*twopiG*numpy.sum(m*numpy.atleast_2d(m).T\
-                                      *numpy.fabs(x-numpy.atleast_2d(x).T))\
-                                      +numpy.sum(m*v**2./2.)
+            +twopiG*numpy.sum(m[sindx]*(mass_below*x[sindx]-xmass_below))\
+            +numpy.sum(m*v**2./2.)
 
 def momentum(v,m):
     """
