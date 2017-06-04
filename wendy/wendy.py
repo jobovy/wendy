@@ -66,6 +66,22 @@ _wendy_nbody_harm_onestep_func.argtypes=\
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int),
      ctypes.c_double]
+class array_w_index(ctypes.Structure):
+    _fields_= [("idx", ctypes.c_int),
+               ("val", ctypes.c_double)]
+_wendy_nbody_approx_onestep_func= _lib._wendy_nbody_approx_onestep
+_wendy_nbody_approx_onestep_func.argtypes=\
+    [ctypes.c_int,
+     ctypes.POINTER(array_w_index),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ctypes.c_double,
+     ctypes.c_int,
+     ctypes.POINTER(ctypes.c_int),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags)]
 _wendy_solve_coll_quad_func= _lib._solve_coll_quad
 _wendy_solve_coll_quad_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double]
@@ -281,6 +297,53 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
+def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
+    """
+    NAME:
+       nbody_approx
+    PURPOSE:
+       run an N-body simulation in 1D, using approximate integration w/ exact forces
+    INPUT:
+       x - positions [N]
+       v - velocities [N]
+       m - masses [N]
+       dt - output time step
+       nleap - number of leapfrog steps / output time step
+       twopiG= (1.) value of 2 \pi G
+    OUTPUT:
+       Generator: each iteration returns (x,v) at equally-spaced time intervals
+    HISTORY:
+       2017-06-03 - Written - Bovy (UofT/CCA)
+    """
+    # Prepare for C
+    x= copy.copy(x)
+    v= copy.copy(v)
+    m= twopiG*copy.copy(m)
+    cumulmass= numpy.zeros(len(x))
+    revcumulmass= numpy.zeros(len(x))
+    err= ctypes.c_int(0)
+    #Array requirements
+    x= numpy.require(x,dtype=numpy.float64,requirements=['C','W'])
+    v= numpy.require(v,dtype=numpy.float64,requirements=['C','W'])
+    a= numpy.require(numpy.zeros(len(x)),
+                     dtype=numpy.float64,requirements=['C','W'])
+    m= numpy.require(m,dtype=numpy.float64,requirements=['C','W'])
+    cumulmass= numpy.require(cumulmass,
+                             dtype=numpy.float64,requirements=['C','W'])
+    revcumulmass= numpy.require(revcumulmass,
+                                dtype=numpy.float64,requirements=['C','W'])
+    xi= (array_w_index * len(x))()
+    for ii in range(len(x)):
+        xi[ii].idx= ctypes.c_int(ii)
+        xi[ii].val= ctypes.c_double(x[ii])
+    # Leapfrog integration
+    dt_leap= dt/nleap
+    while True:
+        _wendy_nbody_approx_onestep_func(len(x),ctypes.pointer(xi[0]),
+                                         x,v,m,a,dt_leap,nleap,err,
+                                         cumulmass,revcumulmass)
+        yield (x,v)
+
 def _approx_force(x,m,twopiG):
     # Sort the data in x
     sindx= numpy.argsort(x)
@@ -296,10 +359,10 @@ def _approx_force(x,m,twopiG):
     mass_above= numpy.roll(mass_above,-1)
     return twopiG*(mass_above-mass_below)[numpy.argsort(i)]
 
-def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
+def nbody_approx_python(x,v,m,dt,nleap,twopiG=1.):
     """
     NAME:
-       nbody_approx
+       nbody_approx_python
     PURPOSE:
        run an N-body simulation in 1D, pure Python version of approximate algo
     INPUT:
