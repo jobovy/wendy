@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include <wendy.h>
 #include <bst.h>
 double _solve_coll_quad(double c0, double c1, double c2){
@@ -30,7 +31,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 			  double * m, int * sindx,
 			  int * cindx, double * next_tcoll, double * tcoll,
 			  double dt,
-			  int maxcoll, int * err, int * ncoll){
+			  int maxcoll, int * err, 
+			  int * ncoll, double * time_elapsed){
   int cnt_coll,ii, tmpi;
   int c_in_x_indx, c_in_x_next_indx;
   double dv,tdt, dm, tmpd;
@@ -46,6 +48,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
   //bst_inorder(bst_tcoll);
+  // Time how long the loop takes
+  clock_t time_begin= clock();
   while ( *next_tcoll < dt && cnt_coll < maxcoll ){
     //printf("Colliding in %f\n",*next_tcoll);
     //fflush(stdout);
@@ -117,6 +121,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     //printf("Next one %f\n",*next_tcoll);
     //fflush(stdout);
   }
+  clock_t time_end= clock();
+  *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot
@@ -143,7 +149,8 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
 			       double * m, int * sindx,
 			       int * cindx, double * next_tcoll,
 			       double * tcoll,double dt,
-			       int maxcoll, int * err, int * ncoll,
+			       int maxcoll, int * err, 
+			       int * ncoll,double * time_elapsed,
 			       double omega){
   int cnt_coll,ii, tmpi;
   int c_in_x_indx, c_in_x_next_indx;
@@ -160,6 +167,8 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
   //bst_inorder(bst_tcoll);
+  // Time how long the loop takes
+  clock_t time_begin= clock();
   while ( *next_tcoll < dt && cnt_coll < maxcoll ){
     //printf("Colliding in %f\n",*next_tcoll);
     //fflush(stdout);
@@ -264,6 +273,8 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     //printf("Next one %f\n",*next_tcoll);
     //fflush(stdout);
   }
+  clock_t time_end= clock();
+  *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot

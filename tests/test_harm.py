@@ -100,7 +100,7 @@ def test_maxncoll_error():
     omega= 10.**-2. # to not change the dynamics too much
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,omega=omega)
     with pytest.raises(RuntimeError) as excinfo:
-        tx,tv,ncoll= next(g)
+        tx,tv,ncoll, _= next(g)
     assert str(excinfo.value) == 'Maximum number of collisions per time step exceeded'   
     return None
 
@@ -113,7 +113,7 @@ def test_maxncoll_warn():
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,warn_maxcoll=True,
                    omega=omega)
     with pytest.warns(RuntimeWarning) as record:
-        tx,tv,ncoll= next(g)
+        tx,tv,ncoll, _= next(g)
     # check that only one warning was raised
     assert len(record) == 1
     # check that the message matches

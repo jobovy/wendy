@@ -108,16 +108,16 @@ def test_count_ncoll():
     v= numpy.array([0.,0.])
     m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
     g= wendy.nbody(x,v,m,1,full_output=True)
-    tx,tv,ncoll= next(g)
+    tx,tv,ncoll, _= next(g)
     assert ncoll == 0, 'Number of collisions in simple 2-body problem is wrong'
-    tx,tv,ncoll= next(g) # collision should have happened now
+    tx,tv,ncoll, _= next(g) # collision should have happened now
     assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
     # Next collision is at dt = 2sqrt(2) => dt=2.82 ==> t =~ 4.24
-    tx,tv,ncoll= next(g)
+    tx,tv,ncoll, _= next(g)
     assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
-    tx,tv,ncoll= next(g)
+    tx,tv,ncoll, _= next(g)
     assert ncoll == 1, 'Number of collisions in simple 2-body problem is wrong'
-    tx,tv,ncoll= next(g) # collision should have happened now
+    tx,tv,ncoll, _= next(g) # collision should have happened now
     assert ncoll == 2, 'Number of collisions in simple 2-body problem is wrong'
     return None
 
@@ -128,7 +128,7 @@ def test_maxncoll_error():
     m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True)
     with pytest.raises(RuntimeError) as excinfo:
-        tx,tv,ncoll= next(g)
+        tx,tv,ncoll, _= next(g)
     assert str(excinfo.value) == 'Maximum number of collisions per time step exceeded'   
     return None
 
@@ -139,7 +139,7 @@ def test_maxncoll_warn():
     m= numpy.array([1.,1.]) # First collision at t=sqrt(2)
     g= wendy.nbody(x,v,m,2,maxcoll=0,full_output=True,warn_maxcoll=True)
     with pytest.warns(RuntimeWarning) as record:
-        tx,tv,ncoll= next(g)
+        tx,tv,ncoll, _= next(g)
     # check that only one warning was raised
     assert len(record) == 1
     # check that the message matches

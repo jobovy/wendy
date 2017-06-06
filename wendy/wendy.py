@@ -49,7 +49,8 @@ _wendy_nbody_onestep_func.argtypes=\
      ctypes.c_double,
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
-     ctypes.POINTER(ctypes.c_int)]
+     ctypes.POINTER(ctypes.c_int),
+     ctypes.POINTER(ctypes.c_double)]
 _wendy_nbody_harm_onestep_func= _lib._wendy_nbody_harm_onestep
 _wendy_nbody_harm_onestep_func.argtypes=\
     [ctypes.c_int,
@@ -65,6 +66,7 @@ _wendy_nbody_harm_onestep_func.argtypes=\
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int),
+     ctypes.POINTER(ctypes.c_double),
      ctypes.c_double]
 class array_w_index(ctypes.Structure):
     _fields_= [("idx", ctypes.c_int),
@@ -117,7 +119,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
        omega= (None) if set, frequency of external harmonic oscillator
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
-       full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed
+       full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative), (b) time elapsed resolving collisions in this iteration (*not* cumulative)
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
        + diagnostic info if full_output
@@ -140,6 +142,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
     x,v,m,a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0
+    time_elapsed= ctypes.c_double(0)
     # Simulate the dynamics
     while True:
         if omega is None:
@@ -147,14 +150,17 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
                                       x,v,a,m,sindx,ctypes.byref(cindx),
                                       ctypes.byref(next_tcoll),
                                       tcoll,dt,maxcoll,
-                                      ctypes.byref(err),ctypes.byref(ncoll_c))
+                                      ctypes.byref(err),ctypes.byref(ncoll_c),
+                                      ctypes.byref(time_elapsed))
         else:
             _wendy_nbody_harm_onestep_func(len(x),
                                            x,v,a,m,sindx,ctypes.byref(cindx),
                                            ctypes.byref(next_tcoll),
                                            tcoll,dt,maxcoll,
                                            ctypes.byref(err),
-                                           ctypes.byref(ncoll_c),omega)
+                                           ctypes.byref(ncoll_c),
+                                           ctypes.byref(time_elapsed),
+                                           omega)
         ncoll+= ncoll_c.value
         if err.value == -2:
             if warn_maxcoll:
@@ -165,7 +171,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
             else:
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
         if full_output:
-            yield(x,v,ncoll)
+            yield(x,v,ncoll,time_elapsed.value)
         else:
             yield(x,v)
 

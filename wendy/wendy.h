@@ -14,12 +14,12 @@ void _wendy_nbody_onestep(int, double *, double *, double *,
 			  double *,int *,
 			  int *, double *, double *,
 			  double,
-			  int,int *,int *);
+			  int,int *,int *,double *);
 void _wendy_nbody_harm_onestep(int, double *, double *, double *,
 			       double *,int *,
 			       int *, double *, double *,
 			       double,
-			       int,int *,int *,double);
+			       int,int *,int *,double *,double);
 void _wendy_nbody_approx_onestep(int,struct array_w_index *, double *, 
 				 double *,double *, double *,
 				 double, int,int *,
