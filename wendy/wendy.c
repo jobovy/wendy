@@ -322,7 +322,7 @@ int argsort_compare_function(const void *a,const void *b) {
   else return 0;
 }
 void _nbody_force(int N, struct array_w_index * xi, double * m, double * a,
-		  double * cumulmass,double * revcumulmass){
+		  double omega2, double * cumulmass,double * revcumulmass){
   int ii;
   // argsort
   qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
@@ -332,27 +332,36 @@ void _nbody_force(int N, struct array_w_index * xi, double * m, double * a,
   // Now compute acceleration from reverse-cumulative mass
   for (ii=0; ii< N-1; ii++)
     *(revcumulmass+N-ii-2)= *(revcumulmass+N-ii-1) + *(m+(xi+N-ii-1)->idx);
-  for (ii=0; ii< N; ii++)
-    *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii);
+  if ( omega2 < 0 )
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii);
+  else
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii) \
+	- omega2 * (xi+ii)->val;
 }
 void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi, 
 				 double * x, double * v, 
 				 double * m, double * a,
-				 double dt, int nleap,int * err,
+				 double dt, int nleap, double omega2,
+				 int * err,double * time_elapsed,
 				 double * cumulmass, double * revcumulmass){
   int ii;
+  clock_t time_begin= clock();
   //drift half
   leapfrog_leapq(N,xi,v,dt/2.);
   //now drift full for a while
   for (ii=0; ii < (nleap-1); ii++){
     //kick+drift
-    _nbody_force(N,xi,m,a,cumulmass,revcumulmass);
+    _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
     leapfrog_leappq(N,xi,v,dt,dt,a);
   }
   //end with one last kick and drift
-  _nbody_force(N,xi,m,a,cumulmass,revcumulmass);
+  _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
   leapfrog_leappq(N,xi,v,dt,dt/2.,a);
   //de-sort
   for (ii=0; ii< N; ii++)
     *(x+(xi+ii)->idx)= (xi+ii)->val;
+  clock_t time_end= clock();
+  *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
 }

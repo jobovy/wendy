@@ -81,7 +81,9 @@ _wendy_nbody_approx_onestep_func.argtypes=\
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ctypes.c_double,
      ctypes.c_int,
+     ctypes.c_double,
      ctypes.POINTER(ctypes.c_int),
+     ctypes.POINTER(ctypes.c_double),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags)]
 _wendy_solve_coll_quad_func= _lib._solve_coll_quad
@@ -102,7 +104,7 @@ class MyQuadPoly:
         mba= -coeff[1]/coeff[2]
         return 0.5*(mba+numpy.sqrt(mba**2.-4.*coeff[0]/coeff[2]))
 
-def nbody(x,v,m,dt,twopiG=1.,omega=None,
+def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
           maxcoll=100000,warn_maxcoll=False,
           full_output=False):
     """
@@ -117,9 +119,11 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
        dt - time step
        twopiG= (1.) value of 2 \pi G
        omega= (None) if set, frequency of external harmonic oscillator
+       approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
+       nleap= (None) when approx == True, number of leapfrog steps for each dt
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
-       full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative), (b) time elapsed resolving collisions in this iteration (*not* cumulative)
+       full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
        + diagnostic info if full_output
@@ -127,6 +131,12 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,
        2017-04-24 - Written - Bovy (UofT/CCA)
        2017-05-23 - Added omega - Bovy (UofT/CCA)
     """
+    if approx: # return approximate solver
+        if nleap is None:
+            raise ValueError('When approx is True, the number of leapfrog steps nleap= per output time step needs to be set')
+        for item in _nbody_approx(x,v,m,dt,nleap,omega=omega,
+                                  twopiG=twopiG,full_output=full_output):
+            yield item
     # Check omega inpput
     if not omega is None and omega*dt > numpy.pi/2.:
         raise ValueError('When omega is set, omega*dt needs to be less than pi/2; please adjust dt')
@@ -303,10 +313,10 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
-def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
+def _nbody_approx(x,v,m,dt,nleap,omega=None,twopiG=1.,full_output=False):
     """
     NAME:
-       nbody_approx
+       _nbody_approx
     PURPOSE:
        run an N-body simulation in 1D, using approximate integration w/ exact forces
     INPUT:
@@ -315,12 +325,18 @@ def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
        m - masses [N]
        dt - output time step
        nleap - number of leapfrog steps / output time step
+       omega= (None) if set, frequency of external harmonic oscillator
        twopiG= (1.) value of 2 \pi G
+       full_output= (False) if True, also yield diagnostic information: (a) time elapsed for integrating this timestep (*not* cumulative)
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
     HISTORY:
        2017-06-03 - Written - Bovy (UofT/CCA)
     """
+    if omega is None:
+        omega2= -1.
+    else:
+        omega2= omega**2.
     # Prepare for C
     x= copy.copy(x)
     v= copy.copy(v)
@@ -344,11 +360,17 @@ def nbody_approx(x,v,m,dt,nleap,twopiG=1.):
         xi[ii].val= ctypes.c_double(x[ii])
     # Leapfrog integration
     dt_leap= dt/nleap
+    time_elapsed= ctypes.c_double(0)
     while True:
         _wendy_nbody_approx_onestep_func(len(x),ctypes.pointer(xi[0]),
-                                         x,v,m,a,dt_leap,nleap,err,
+                                         x,v,m,a,dt_leap,nleap,omega2,
+                                         ctypes.byref(err),
+                                         ctypes.byref(time_elapsed),
                                          cumulmass,revcumulmass)
-        yield (x,v)
+        if full_output:
+            yield(x,v,time_elapsed.value)
+        else:
+            yield (x,v)
 
 def _approx_force(x,m,twopiG):
     # Sort the data in x
