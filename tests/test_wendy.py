@@ -2,6 +2,7 @@
 import numpy
 import pytest
 import wendy
+numpy.random.seed(2)
 def test_energy_conservation():
     # Test that energy is conserved for a simple problem
     x= numpy.array([-1.1,0.1,1.3])

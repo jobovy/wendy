@@ -2,6 +2,7 @@
 import numpy
 import pytest
 import wendy
+numpy.random.seed(2)
 def test_energy_conservation():
     # Test that energy is conserved for a simple problem
     x= numpy.array([-1.1,0.1,1.3])
@@ -96,3 +97,17 @@ def test_nleap_error():
     assert str(excinfo.value) == 'When approx is True, the number of leapfrog steps nleap= per output time step needs to be set'   
     return None
 
+def test_time():
+    # Just run the timer...
+    N= 101
+    totmass= 1.
+    sigma= 1.
+    zh= 2.*sigma**2./totmass
+    x= numpy.arctanh(2.*numpy.random.uniform(size=N)-1)*zh
+    v= numpy.random.normal(size=N)*sigma
+    v-= numpy.mean(v) # stabilize
+    m= numpy.ones_like(x)/N*(1.+0.1*(2.*numpy.random.uniform(size=N)-1))
+    g= wendy.nbody(x,v,m,0.05,approx=True,nleap=1000,full_output=True)
+    tx,tv, time_elapsed= next(g)
+    assert time_elapsed < 1., 'More than 1 second elapsed for simple problem'
+    return None
