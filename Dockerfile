@@ -5,7 +5,8 @@ MAINTAINER Jo Bovy
 USER root
 
 # Add ffmpeg dependency for notebook movies
-RUN add-apt-repository ppa:mc3man/trusty-media
+RUN apt-get -y install software-properties-common
+RUN add-apt-repository -y ppa:mc3man/trusty-media
 RUN apt-get update
 RUN apt-get install -y ffmpeg
 
