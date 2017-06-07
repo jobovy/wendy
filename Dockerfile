@@ -2,6 +2,12 @@ FROM andrewosh/binder-base
 
 MAINTAINER Jo Bovy
 
+USER root
+
+# Add ffmpeg dependency for notebook movies
+RUN apt-get update
+RUN apt-get install -y ffmpeg
+
 USER main
 
 # Install requirements for Python 2 and 3
