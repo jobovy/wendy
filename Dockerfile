@@ -2,13 +2,12 @@ FROM andrewosh/binder-base
 
 MAINTAINER Jo Bovy
 
-USER root
-
 # Add ffmpeg dependency for notebook movies
-RUN apt-get -y install software-properties-common
-RUN add-apt-repository -y ppa:mc3man/trusty-media
-RUN apt-get update
-RUN apt-get install -y ffmpeg
+USER main
+RUN wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
+RUN tar xvfJ ffmpeg-release-64bit-static.tar.xz
+USER root
+RUN ln ffmpeg-3.1.2-64bit-static/ffmpeg /usr/local/bin/ffmpeg
 
 USER main
 
