@@ -8,7 +8,7 @@ A one-dimensional gravitational N-body code.
 
 ## Overview
 
-``wendy`` solves the one-dimensional gravitational N-body problem to machine precision with an efficient algorithm [O(log N) / particle-collision].
+``wendy`` solves the one-dimensional gravitational N-body problem to machine precision with an efficient algorithm [O(log N) / particle-collision]. Alternatively, it can solve the problem with approximate integration, but with exact forces.
 
 ## Author
 
@@ -34,7 +34,7 @@ next_x, next_v= next(g) # at t=0.05
 next_x, next_v= next(g) # at t=0.10
 ...
 ```
-A pure Python version of the code is available as ``wendy.nbody_python``.
+The generator initialization with ``wendy.nbody`` has options to (a) solve the problem exactly or not using ``approx=`` and (b) include an external harmonic oscillator potential ``omega^2 x^2 / 2`` with ``omega=`` (both for exact and approximate solutions).
 
 ## Examples
 
