@@ -46,3 +46,6 @@ The generator initialization with ``wendy.nbody`` has options to (a) solve the p
 
 <img src="https://cloud.githubusercontent.com/assets/1044876/26089385/4b4f491a-39cb-11e7-9709-278162abe5b7.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26089414/850dd7a2-39cb-11e7-9beb-73dbce2c6c4b.gif" width="400">
 
+* ``wendy`` scaling with particle number: [example notebook](examples/WendyScaling.ipynb) (view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/WendyScaling.ipynb?flush_cache=true))
+
+
