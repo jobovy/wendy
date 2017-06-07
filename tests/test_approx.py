@@ -133,3 +133,18 @@ def test_againstexact_sech2disk_manyparticles():
         cnt+= 1
     return None
 
+def test_samex():
+    # Test that the code works if two particles are at the exact same position
+    # middle ones setup such that they end up in the same place for the first
+    # force evaluation
+    x= numpy.array([-1.1,-2.*0.05/2./10000,0.3*0.05/2./10000,1.3])
+    v= numpy.array([3.,2.,-.3,-5.])
+    m= numpy.array([1.,1.,1.,1.])
+    g= wendy.nbody(x,v,m,0.05,approx=True,nleap=10000)
+    E= wendy.energy(x,v,m)
+    cnt= 0
+    while cnt < 1:
+        tx,tv= next(g)
+        assert numpy.fabs(wendy.energy(tx,tv,m)-E)/E < 10.**-6., "Energy not conserved during approximate N-body integration"
+        cnt+= 1
+    return None
