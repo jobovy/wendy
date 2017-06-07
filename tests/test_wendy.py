@@ -1,4 +1,4 @@
-# test_wendy.py: some basic tests of the pure N-body code
+# test_wendy.py: some basic tests of the exact N-body code
 import numpy
 import pytest
 import wendy
