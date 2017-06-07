@@ -51,3 +51,26 @@ def test_energy_conservation_sech2disk_manyparticles():
         assert numpy.fabs(wendy.energy(tx,tv,m,omega=omega)-E)/E < 10.**-6., "Energy not conserved during approximate N-body integration with external harmonic potential"
         cnt+= 1
     return None
+
+def test_againstexact_sech2disk_manyparticles():
+    # Test that the exact N-body and the approximate N-body agree
+    N= 101
+    totmass= 1.
+    sigma= 1.
+    zh= 2.*sigma**2./totmass
+    x= numpy.arctanh(2.*numpy.random.uniform(size=N)-1)*zh
+    v= numpy.random.normal(size=N)*sigma
+    v-= numpy.mean(v) # stabilize
+    m= numpy.ones_like(x)/N*(1.+0.1*(2.*numpy.random.uniform(size=N)-1))
+    omega= 1.1
+    g= wendy.nbody(x,v,m,0.05,approx=True,nleap=2000,omega=omega)
+    ge= wendy.nbody(x,v,m,0.05,omega=omega)
+    cnt= 0
+    while cnt < 100:
+        tx,tv= next(g)
+        txe,tve= next(ge)
+        assert numpy.all(numpy.fabs(tx-txe) < 10.**-5.), "Exact and approximate N-body give different positions"
+        assert numpy.all(numpy.fabs(tv-tve) < 10.**-5.), "Exact and approximate N-body give different positions"
+        cnt+= 1
+    return None
+

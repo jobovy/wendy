@@ -111,3 +111,25 @@ def test_time():
     tx,tv, time_elapsed= next(g)
     assert time_elapsed < 1., 'More than 1 second elapsed for simple problem'
     return None
+
+def test_againstexact_sech2disk_manyparticles():
+    # Test that the exact N-body and the approximate N-body agree
+    N= 101
+    totmass= 1.
+    sigma= 1.
+    zh= 2.*sigma**2./totmass
+    x= numpy.arctanh(2.*numpy.random.uniform(size=N)-1)*zh
+    v= numpy.random.normal(size=N)*sigma
+    v-= numpy.mean(v) # stabilize
+    m= numpy.ones_like(x)/N*(1.+0.1*(2.*numpy.random.uniform(size=N)-1))
+    g= wendy.nbody(x,v,m,0.05,approx=True,nleap=2000)
+    ge= wendy.nbody(x,v,m,0.05)
+    cnt= 0
+    while cnt < 100:
+        tx,tv= next(g)
+        txe,tve= next(ge)
+        assert numpy.all(numpy.fabs(tx-txe) < 10.**-5.), "Exact and approximate N-body give different positions"
+        assert numpy.all(numpy.fabs(tv-tve) < 10.**-5.), "Exact and approximate N-body give different positions"
+        cnt+= 1
+    return None
+
