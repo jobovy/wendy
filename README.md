@@ -44,7 +44,7 @@ The generator initialization with ``wendy.nbody`` has options to (a) solve the p
 
 * A self-gravitating, sech<sup>2</sup> disk: [example notebook](examples/SelfGravitatingSech2Disk.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/SelfGravitatingSech2Disk.ipynb?flush_cache=true))
 
-<img src="https://user-images.githubusercontent.com/1044876/26940534-fc8fc99a-4c48-11e7-8ea1-077c1179e429.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26089414/850dd7a2-39cb-11e7-9beb-73dbce2c6c4b.gif" width="400">
+<img src="https://user-images.githubusercontent.com/1044876/26942002-7dce9644-4c4e-11e7-90d0-43beddfd0dd9.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26089414/850dd7a2-39cb-11e7-9beb-73dbce2c6c4b.gif" width="400">
 
 * Adiabatic contraction: [example notebook](examples/AdiabaticContraction.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/AdiabaticContraction.ipynb?flush_cache=true))
 
