@@ -48,7 +48,7 @@ The generator initialization with ``wendy.nbody`` has options to (a) solve the p
 
 * Adiabatic contraction: [example notebook](examples/AdiabaticContraction.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/AdiabaticContraction.ipynb?flush_cache=true))
 
-<img src="https://user-images.githubusercontent.com/1044876/26940942-a0bfd22a-4c4a-11e7-845a-8ef17c05e987.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/26940674-94c66822-4c49-11e7-9a29-0c86b5d9eb44.gif" width="400">
+<img src="https://user-images.githubusercontent.com/1044876/26941638-2b4eed8e-4c4d-11e7-9804-a63b681b86e6.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/26941809-d7393b22-4c4d-11e7-97dd-cd3b259aefa7.gif" width="400">
 
 * ``wendy`` scaling with particle number: [example notebook](examples/WendyScaling.ipynb) (view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/WendyScaling.ipynb?flush_cache=true))
 
