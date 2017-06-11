@@ -38,6 +38,8 @@ The generator initialization with ``wendy.nbody`` has options to (a) solve the p
 
 ## Examples
 
+You can run these *without* installing ``wendy`` by clicking on [![Binder](http://mybinder.org/badge.svg)](http://beta.mybinder.org/repo/jobovy/wendy) and navigating to the ``examples/`` directory. Note that some of the movies might fail to be rendered on the binder webpage, so you might want to skip those when running the notebooks (or changing the ``subsamp`` input for them).
+
 * Phase mixing and violent relaxation in one dimension: [example notebook](examples/PhaseMixingViolentRelaxation.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/PhaseMixingViolentRelaxation.ipynb?flush_cache=true))
 
 <img src="https://cloud.githubusercontent.com/assets/1044876/26030657/e29c9efe-3826-11e7-8419-7bf96d565569.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26030672/1fafa9bc-3827-11e7-9167-16f10bb40b59.gif" width="400">
@@ -49,6 +51,10 @@ The generator initialization with ``wendy.nbody`` has options to (a) solve the p
 * Adiabatic contraction: [example notebook](examples/AdiabaticContraction.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/AdiabaticContraction.ipynb?flush_cache=true))
 
 <img src="https://user-images.githubusercontent.com/1044876/26941638-2b4eed8e-4c4d-11e7-9804-a63b681b86e6.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/26941809-d7393b22-4c4d-11e7-97dd-cd3b259aefa7.gif" width="400">
+
+* Adiabatic vs. non-adiabatic energy injection for an exponential disk: [example notebook](examples/AdiabaticVsNonAdiabatic.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/AdiabaticVsNonAdiabatic.ipynb?flush_cache=true))
+
+<img src="https://user-images.githubusercontent.com/1044876/27014815-3d5fe2de-4ece-11e7-953f-ced11d4993d2.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/27014825-648498f0-4ece-11e7-8360-cf1f04e13cba.gif" width="400">
 
 * ``wendy`` scaling with particle number: [example notebook](examples/WendyScaling.ipynb) (view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/WendyScaling.ipynb?flush_cache=true))
 
