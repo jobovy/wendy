@@ -16,7 +16,11 @@ Jo Bovy (University of Toronto): bovy - at - astro - dot - utoronto - dot - ca
 
 ## Installation
 
-Clone/fork/download the repository and install using
+Install the latest release using
+```
+pip install wendy
+```
+or clone/fork/download the repository and install using
 ```
 sudo python setup.py install
 ```
