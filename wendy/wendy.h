@@ -13,6 +13,7 @@ double _solve_harm_pos(double,double,double,double);
 void _wendy_nbody_onestep(int, double *, double *, double *,
 			  double *,int *,
 			  int *, double *, double *,
+			  int, double *, double *, int *,
 			  double,
 			  int,int *,int *,double *);
 void _wendy_nbody_harm_onestep(int, double *, double *, double *,

@@ -33,6 +33,7 @@ struct node * bst_build(int N,int * idxs, double * vals){
 }
 // Free memory of a tree
 void bst_destroy(struct node * node){
+  if (node == NULL) return;
   // Clean up memory recursively
   if (node->left != NULL)
     bst_destroy(node->left);

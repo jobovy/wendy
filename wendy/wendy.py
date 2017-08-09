@@ -46,6 +46,10 @@ _wendy_nbody_onestep_func.argtypes=\
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_double),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ctypes.c_int,
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
+     ndpointer(dtype=numpy.int32,flags=ndarrayFlags),
      ctypes.c_double,
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
@@ -105,8 +109,8 @@ class MyQuadPoly:
         return 0.5*(mba+numpy.sqrt(mba**2.-4.*coeff[0]/coeff[2]))
 
 def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
-          maxcoll=100000,warn_maxcoll=False,
-          full_output=False):
+          xt=None,vt=None,
+          maxcoll=100000,warn_maxcoll=False,full_output=False):
     """
     NAME:
        nbody
@@ -121,6 +125,8 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
        omega= (None) if set, frequency of external harmonic oscillator
        approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
        nleap= (None) when approx == True, number of leapfrog steps for each dt
+       xt= (None) if set, x positions of test particles [M]
+       vt= (None) if set, v positions of test particles [M]
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
@@ -143,13 +149,19 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
     # Check that no masses are tiny, because these cause issues
     if numpy.any(m < numpy.median(m)*10.**-8.):
         raise ValueError('Tiny masses m much smaller than the median mass are not supported, please remove these from the inputs')
+    # Setup test-particle input
+    if xt is None:
+        nxt= 0
+    else:
+        nxt= len(xt)
     # Sort the data in x
     x= copy.copy(x)
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
     if not omega is None:
         m/= omega**2.
-    x,v,m,a,sindx,cindx,next_tcoll,tcoll,err= _setup_arrays(x,v,m,omega=omega)
+    x,v,m,a,sindx,cindx,next_tcoll,tcoll,err,xt,vt,stindx= \
+        _setup_arrays(x,v,m,omega=omega,xt=xt,vt=vt)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0
     time_elapsed= ctypes.c_double(0)
@@ -159,7 +171,8 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
             _wendy_nbody_onestep_func(len(x),
                                       x,v,a,m,sindx,ctypes.byref(cindx),
                                       ctypes.byref(next_tcoll),
-                                      tcoll,dt,maxcoll,
+                                      tcoll,nxt,xt,vt,stindx,
+                                      dt,maxcoll,
                                       ctypes.byref(err),ctypes.byref(ncoll_c),
                                       ctypes.byref(time_elapsed))
         else:
@@ -176,17 +189,21 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
             if warn_maxcoll:
                 warnings.warn("Maximum number of collisions per time step exceeded",RuntimeWarning)
                 # Re-compute the accelerations
-                x,v,m,a,sindx,cindx,next_tcoll,tcoll,err=\
-                    _setup_arrays(x,v,m,omega=omega)
+                x,v,m,a,sindx,cindx,next_tcoll,tcoll,err,xt,vt,stindx=\
+                    _setup_arrays(x,v,m,omega=omega,xt=xt,vt=vt)
             else:
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
-        if full_output:
-            yield(x,v,ncoll,time_elapsed.value)
-        else:
-            yield(x,v)
+        out= (x,v)
+        if nxt > 0: out= out+(xt,vt,)
+        if full_output: out= out+(ncoll,time_elapsed.value,)
+        yield out
 
-def _setup_arrays(x,v,m,omega=None):
+def _setup_arrays(x,v,m,omega=None,xt=None,vt=None):
     sindx= numpy.argsort(x)
+    if not xt is None:
+        stindx= numpy.argsort(xt)
+    else:
+        stindx= None
     # Keep track of amount of mass above and below and compute acceleration
     mass_below= numpy.cumsum(m[sindx])
     mass_below[-1]= 0.
@@ -214,8 +231,19 @@ def _setup_arrays(x,v,m,omega=None):
     a= numpy.require(a,dtype=numpy.float64,requirements=['C','W'])
     m= numpy.require(m,dtype=numpy.float64,requirements=['C','W'])
     sindx= numpy.require(sindx,dtype=numpy.int32,requirements=['C','W'])
+    if not stindx is None:
+        xt= numpy.require(xt,dtype=numpy.float64,requirements=['C','W'])
+        vt= numpy.require(vt,dtype=numpy.float64,requirements=['C','W'])
+        stindx= numpy.require(stindx,dtype=numpy.int32,requirements=['C','W'])
+    else: # dummy
+        xt= numpy.require(numpy.array([0]),
+                          dtype=numpy.float64,requirements=['C','W'])
+        vt= numpy.require(numpy.array([0]),
+                          dtype=numpy.float64,requirements=['C','W'])
+        stindx= numpy.require(numpy.array([0]),
+                              dtype=numpy.int32,requirements=['C','W'])
     tcoll= numpy.require(tcoll,dtype=numpy.float64,requirements=['C','W'])
-    return (x,v,m,a,sindx,cindx,next_tcoll,tcoll,err)
+    return (x,v,m,a,sindx,cindx,next_tcoll,tcoll,err,xt,vt,stindx)
 
 def nbody_python(x,v,m,dt,twopiG=1.):
     """
