@@ -493,6 +493,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       }
     }
 
+    if ( M > 0 ) {
     tmpN= 0;
     for (jj=0; jj < N; jj++) {
       tmpN+= bst_nNode(*(bst_tcollt_rite+jj));
@@ -527,6 +528,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       printf("%g,",*(vt+ *(stindx+jj)));
     printf("\n");
     fflush(stdout);
+    }
 
     if ( M > 0 )
       *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
