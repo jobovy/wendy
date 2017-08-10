@@ -329,8 +329,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       // Next handle test-particle -- massive-particle collisions
       // Locate colliding tp, delete from its own BSTs
       minNode= bst_minValueNode(bst_tcollt);
-      bst_tcollt= bst_deleteNode(bst_tcollt,next_tcoll_tm);
       cindx_tp= minNode->idx;
+      bst_tcollt= bst_deleteNode(bst_tcollt,next_tcoll_tm);
       if ( cindx_tp < N ) { // collision from the left
 	tp_left= true;
 	if ( cindx_tp > 0 )
