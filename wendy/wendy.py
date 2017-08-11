@@ -400,7 +400,7 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,twopiG=1.,full_output=False):
         else:
             yield (x,v)
 
-def energy(x,v,m,twopiG=1.,individual=False,omega=None):
+def energy(x,v,m,twopiG=1.,individual=False,omega=None,xt=None,vt=None):
     """
     NAME:
        energy
@@ -413,21 +413,37 @@ def energy(x,v,m,twopiG=1.,individual=False,omega=None):
        twopiG= (1.) value of 2 \pi G
        individual= (False) if True, return each particle's individual energy (note: individual energies don't add up to the system's energy)
        omega= (None) if set, frequency of external harmonic oscillator
+       xt= (None) if xt and vt are set, compute the energy of this set of test particles instead of the energy of the system
+       vt= (None) if xt and vt are set, compute the energy of this set of test particles instead of the energy of the system
     OUTPUT:
        Energy
     HISTORY:
        2017-04-24 - Written - Bovy (UofT/CCA)
        2017-05-10 - Added individual energies - Bovy (UofT/CCA)
+       2017-08-10 - Add test particles - Bovy (UofT)
     """
+    if (not xt is None and vt is None) or (not vt is None and xt is None):
+        raise ValueError("Can only compute test-particle energies if both xt= and vt= are set")
+    if not xt is None and not vt is None and not individual:
+        raise ValueError("Only computing individual energies of test particles is supported; set 'individual=True' to compute this")
     if not omega is None:
-        out= m*omega**2.*x**2./2.
+        if not xt is None and not vt is None:
+            out= m*omega**2.*xt**2./2.
+        else:
+            out= m*omega**2.*x**2./2.
     else:
         out= 0.
     if individual:
-        return out\
-            +twopiG*m\
-            *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(x).T),axis=1)\
-            +m*v**2./2.
+        if not xt is None and not vt is None:
+            return out\
+                +twopiG\
+                *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(xt).T),axis=1)\
+                +vt**2./2.
+        else:
+            return out\
+                +twopiG*m\
+                *numpy.sum(m*numpy.fabs(x-numpy.atleast_2d(x).T),axis=1)\
+                +m*v**2./2.
     else:
         sindx= numpy.argsort(x)
         mass_below= numpy.roll(numpy.cumsum(m[sindx]),1)
