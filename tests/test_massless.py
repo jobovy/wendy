@@ -37,3 +37,49 @@ def test_basic():
     tx,tv,txt,tvt,ncoll, _= next(g)
     assert (txt[0] > tx[1]), "Massive--massless collision shouldn't have happened yet" 
     return None
+
+#def test_from_pickle():
+#    import pickle
+#    with open('test.sav','rb') as savefile:
+#        x= pickle.load(savefile)
+#        v= pickle.load(savefile)
+#        m= pickle.load(savefile)
+#        xt= pickle.load(savefile)
+#        vt= pickle.load(savefile)
+#    g= wendy.nbody(x,v,m,0.05,xt=xt,vt=vt)
+#    tx,tv, txt, tvt= next(g)
+#    return None
+
+def test_selfgravitating():
+    # For an equilibrium configuration, the energy of individual test particles
+    # should be approximately conserved (not so for a non-equilibrium config)
+    # Test that energy is conserved for a self-gravitating disk, by checking
+    # that the energy of test particles is conserved at the same level as that
+    # of the massive particles
+    N= 1001
+    totmass= 1.
+    sigma= 1.
+    zh= 2.*sigma**2./totmass
+    x= numpy.arctanh(2.*numpy.random.uniform(size=N)-1)*zh
+    v= numpy.random.normal(size=N)*sigma
+    v-= numpy.mean(v) # stabilize
+    m= numpy.ones_like(x)/N*(1.+0.1*(2.*numpy.random.uniform(size=N)-1))
+    # Also generate massless particles
+    M= 201
+    xt= numpy.arctanh(2.*numpy.random.uniform(size=M)-1)*zh
+    vt= numpy.random.normal(size=M)*sigma
+    vt-= numpy.mean(vt) # stabilize   
+    g= wendy.nbody(x,v,m,0.05,xt=xt,vt=vt)
+    E= wendy.energy(x,v,m,individual=True)
+    Et= wendy.energy(x,v,m,individual=True,xt=xt,vt=vt) # dummy m=1
+    cnt= 0
+    while cnt < 100:
+        tx,tv, txt, tvt= next(g)
+#        from galpy.util import save_pickles
+#        save_pickles('test.sav',tx,tv,m,txt,tvt)
+        #print(cnt,numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True,xt=txt,vt=tvt)-Et)/Et))/numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True)-E)/E)))
+        assert numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True,xt=txt,vt=tvt)-Et)/Et)) < 2.*numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True)-E)/E)), "Energy of massless particles not conserved during simple N-body integration of equilibrium disk"
+        cnt+= 1
+    return None
+
+    
