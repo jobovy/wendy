@@ -8,6 +8,7 @@
 #include <time.h>
 #include <wendy.h>
 #include <bst.h>
+bool _PRINT_DIAGNOSTICS= false;
 double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
   double mba;
@@ -83,10 +84,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	       ( ( jj < N && *(xt + *(stindx+ii)) < *(x + *(sindx+jj) ) ) \
 		 || ( jj == N ) ) )
 	{
-	  printf("%g,",*(xt + *(stindx+ii)));
+	  if (_PRINT_DIAGNOSTICS)
+	    printf("%g,",*(xt + *(stindx+ii)));
 	ii++;
 	}
-      printf("\n");
+      if ( _PRINT_DIAGNOSTICS )
+	printf("\n");
       fflush(stdout);
 
       tp_assign_high= ii;
@@ -101,9 +104,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 					   -tp_assign_low,
 					   idx_tp+tp_assign_low,
 					   tcollt_rite+tp_assign_low);
-	printf("Printing rite BST in order for mass %i\n",jj-1);
-	fflush(stdout);
-	bst_inorder(*(bst_tcollt_rite+jj-1));
+	if ( _PRINT_DIAGNOSTICS ) {
+	    printf("Printing rite BST in order for mass %i\n",jj-1);
+	    fflush(stdout);
+	    bst_inorder(*(bst_tcollt_rite+jj-1));
+	  }
       }
       if ( jj < N ) {
 	*(ntp_left+jj)= tp_assign_high;
@@ -115,9 +120,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	*(bst_tcollt_left+jj)=bst_build(tp_assign_high-tp_assign_low,
 					idx_tp+tp_assign_low,
 					tcollt_left+tp_assign_low);
-	printf("Printing left BST in order for mass %i\n",jj);
-	fflush(stdout);
-	bst_inorder(*(bst_tcollt_left+jj));
+	if ( _PRINT_DIAGNOSTICS ) {
+	    printf("Printing left BST in order for mass %i\n",jj);
+	    fflush(stdout);
+	    bst_inorder(*(bst_tcollt_left+jj));
+	  }
       } 
     }
     //Now make a BST with the minimum times for each node
@@ -127,11 +134,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     tcollt_min= (double *) malloc ( 2*N * sizeof(double) );
     for (jj=0; jj < N; jj++) {
       if ( *(bst_tcollt_left+jj) == NULL )
-	*(tcollt_min+jj)= dt+1.+jj;
+	*(tcollt_min+jj)= dt+1.+jj+(float)rand()/(float)(RAND_MAX/1.);
       else
 	*(tcollt_min+jj)= *(bst_minValueNode(*(bst_tcollt_left+jj))->val);
       if ( *(bst_tcollt_rite+jj) == NULL )
-	*(tcollt_min+N+jj)= dt+1.+N+jj;
+	*(tcollt_min+N+jj)= dt+1.+N+jj+(float)rand()/(float)(RAND_MAX/1.);
       else
 	*(tcollt_min+N+jj)= *(bst_minValueNode(*(bst_tcollt_rite+jj))->val);
     }
@@ -139,15 +146,19 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     next_tcoll_tm= (double *) malloc ( sizeof ( double ) );
     *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
     free(idx);
-    printf("Printing tp BST in order\n");
-    fflush(stdout);
-    bst_inorder(bst_tcollt);
+    if ( _PRINT_DIAGNOSTICS ) {
+	printf("Printing tp BST in order\n");
+	fflush(stdout);
+	bst_inorder(bst_tcollt);
+    }
   } else next_tcoll_tm= &dt; // just so that it is >= dt
   // Time how long the loop takes
   clock_t time_begin= clock();
   while ( ( *next_tcoll < dt || *next_tcoll_tm < dt ) && cnt_coll < maxcoll ){
-    printf("Next collisions? %g,%g\n",*next_tcoll,*next_tcoll_tm);
-    fflush(stdout);
+    if ( _PRINT_DIAGNOSTICS ) {
+      printf("Next collisions? %g,%g\n",*next_tcoll,*next_tcoll_tm);
+      fflush(stdout);
+    }
     if ( M == 0 || *next_tcoll < *next_tcoll_tm ) {
       cnt_coll+= 1;
       // collide, update collided particles
@@ -216,12 +227,26 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	c_in_x_next_indx= *(sindx+ *cindx);
 	//First delete node in overall bst_tcollt, left of left, rite of rite
 	bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+*cindx);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("tp BST in order:\n");
+	  bst_inorder(bst_tcollt);
+	  printf("tp BST has %i entries in the midst of deletion, after deleting %g, cindx=%i\n",bst_nNode(bst_tcollt),*(tcollt_min+*cindx),*cindx);
+	  printf("tp BST in order again:\n");
+	  bst_inorder(bst_tcollt);
+	  fflush(stdout);
+	}
 	bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+N+*cindx+1);
 	*(tcollt_min+*cindx)= dt+1.+*cindx;
 	*(tcollt_min+N+*cindx+1)= dt+1.+*cindx;
-	printf("bst inorder after deletion:\n");
-	bst_inorder(bst_tcollt);
-	fflush(stdout);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("tp BST has %i entries after deletion\n",bst_nNode(bst_tcollt));
+	  fflush(stdout);
+	}
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("bst inorder after deletion:\n");
+	  bst_inorder(bst_tcollt);
+	  fflush(stdout);
+	}
 	//Assign left tp from left mp to left tp of rite mp
 	if ( *cindx > 0 ) {
 	  tmpN= *(ntp_left+*cindx)-*(ntp_left+*cindx-1);
@@ -233,7 +258,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	}
 	tmpd= *(a + c_in_x_next_indx) + *(m + c_in_x_next_indx); // tp accel.
 	for (kk=0; kk < tmpN; kk++) {
-	  tdt= *next_tcoll - *(ttp + tmpi + kk);
+	  tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
 	  *(tcollt_left+tmpi+kk) = *next_tcoll + _solve_coll_quad(		      \
 	    *(xt + *(stindx+tmpi+kk)) + *(vt + *(stindx+tmpi+kk)) * tdt \
 	    + 0.5 * tmpd * tdt * tdt - *(x + c_in_x_next_indx),
@@ -241,9 +266,27 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    0.5 * *(m + c_in_x_next_indx)); //rel. a = indiv. mas
 
 	  if ( *(tcollt_left+tmpi+kk)-*next_tcoll < 0 ) {
-	    printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME \n" "\033[0m");
-	    fflush(stdout);
-	    abort();
+	    //	    if ( _PRINT_DIAGNOSTICS ) {
+	      for (ii=0; ii < N; ii++)
+		printf("ntp_left %i: %i\n",ii,*(ntp_left+ii));
+	      fflush(stdout);
+	      printf("Left collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+		     *cindx,tmpi+kk,tmpN,
+		     *(xt + *(stindx+tmpi+kk)),
+		     *(vt + *(stindx+tmpi+kk)),
+		     tdt,
+		     tmpd,
+		     *(x + c_in_x_next_indx),
+		     *(v + c_in_x_next_indx),
+		     *(xt + *(stindx+tmpi+kk))		\
+		     + *(vt + *(stindx+tmpi+kk)) * tdt	\
+		     + 0.5 * tmpd * tdt * tdt,
+		     *(vt + *(stindx+tmpi+kk)) + tmpd * tdt,
+		     *(ttp + *(stindx+tmpi+kk)));
+	      printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME %g \n" "\033[0m",*(tcollt_left+tmpi+kk)-*next_tcoll);
+	      fflush(stdout);
+	      //	    }
+	      abort();
 	  }
 
 	}
@@ -263,23 +306,30 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	}
 	tmpd= *(a + c_in_x_indx) - *(m + c_in_x_indx); // tp acceleration
 	for (kk=0; kk < tmpN; kk++) {
-	  tdt= *next_tcoll - *(ttp + tmpi + kk);
+	  tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
 	  *(tcollt_rite+tmpi+kk) = *next_tcoll + _solve_coll_quad(		      \
 	    *(xt + *(stindx+tmpi+kk)) + *(vt + *(stindx+tmpi+kk)) * tdt \
 	    + 0.5 * tmpd * tdt * tdt- *(x + c_in_x_indx),
 	    *(vt + *(stindx+tmpi+kk)) + tmpd * tdt - *(v + c_in_x_indx),
 	    -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
-	  printf("Collision data: %i,%i,%g,%g,%g,%g,%g,%g,%g\n",
-		 tmpi,*(stindx+tmpi+kk),
-		 *(xt + *(stindx+tmpi+kk)),
-		 *(vt + *(stindx+tmpi+kk)),tdt,
-		 tmpd,*(x + c_in_x_indx),*(v + c_in_x_indx),
-		 -0.5 * *(m + c_in_x_indx));
-	  fflush(stdout);
-
 	  if ( *(tcollt_rite+tmpi+kk)-*next_tcoll < 0 ) {
-	    printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME \n" "\033[0m");
-	    fflush(stdout);
+	    if ( _PRINT_DIAGNOSTICS ) {
+	      printf("Rite collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+		     *cindx,tmpi+kk,tmpN,
+		     *(xt + *(stindx+tmpi+kk)),
+		     *(vt + *(stindx+tmpi+kk)),
+		     tdt,
+		     tmpd,
+		     *(x + c_in_x_next_indx),
+		     *(v + c_in_x_next_indx),
+		     *(xt + *(stindx+tmpi+kk))		\
+		     + *(vt + *(stindx+tmpi+kk)) * tdt	\
+		     + 0.5 * tmpd * tdt * tdt,
+		     *(vt + *(stindx+tmpi+kk)) + tmpd * tdt,
+		     *(ttp + *(stindx+tmpi+kk)));
+	      printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME %g\n" "\033[0m",*(tcollt_rite+tmpi+kk)-*next_tcoll);
+	      fflush(stdout);
+	    }
 	    abort();
 	  }
 
@@ -290,34 +340,41 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 					       tcollt_rite+tmpi);
 	bst_destroy(*(bst_tcollt_left+*cindx+1));
 	*(bst_tcollt_left+*cindx+1)= NULL;
-	bst_inorder(*(bst_tcollt_rite+*cindx+1));
 	//insert new tcoll in overall bst_tcollt
 	if ( *(bst_tcollt_left+*cindx) == NULL )
-          *(tcollt_min+*cindx)= dt+1.+*cindx;
+          *(tcollt_min+*cindx)= dt+1.+*cindx+(float)rand()/(float)(RAND_MAX/1.);
         else
 	  *(tcollt_min+*cindx)=					\
 	    *(bst_minValueNode(*(bst_tcollt_left+*cindx))->val);
 	if ( *(bst_tcollt_rite+*cindx+1) == NULL )
-	  *(tcollt_min+N+*cindx+1)= dt+1.+*cindx;
+	  *(tcollt_min+N+*cindx+1)= dt+1.+*cindx+(float)rand()/(float)(RAND_MAX/1.);
 	else
 	  *(tcollt_min+N+*cindx+1)=					\
 	    *(bst_minValueNode(*(bst_tcollt_rite+*cindx+1))->val);
-	printf("bst inorder before insert:\n");
-	bst_inorder(bst_tcollt);
-	fflush(stdout);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("bst inorder before insert:\n");
+	  bst_inorder(bst_tcollt);
+	  fflush(stdout);
+	}
 	bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
 	bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx+1,tcollt_min+N+*cindx+1);
-	for (jj=0; jj < N; jj++) {
-	  printf("Printing new rite BST in order for mass %i\n",jj);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("tp BST has %i entries after forced insert after deletion\n",bst_nNode(bst_tcollt));
 	  fflush(stdout);
-	  bst_inorder(*(bst_tcollt_rite+jj));
-	  printf("Printing new left BST in order for mass %i\n",jj);
-	  fflush(stdout);
-	  bst_inorder(*(bst_tcollt_left+jj));
 	}
-	printf("Printing tp BST in order\n");
-	fflush(stdout);
-	bst_inorder(bst_tcollt);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  for (jj=0; jj < N; jj++) {
+	    printf("Printing new rite BST in order for mass %i\n",jj);
+	    fflush(stdout);
+	    bst_inorder(*(bst_tcollt_rite+jj));
+	    printf("Printing new left BST in order for mass %i\n",jj);
+	    fflush(stdout);
+	    bst_inorder(*(bst_tcollt_left+jj));
+	  }
+	  printf("Printing tp BST in order\n");
+	  fflush(stdout);
+	  bst_inorder(bst_tcollt);
+	}
       }
       // Find minimum
       minNode= bst_minValueNode(bst_tcoll);
@@ -355,19 +412,23 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  *(bst_tcollt_left+cindx_tp+1)=\
 	    bst_deleteNode(*(bst_tcollt_left+cindx_tp+1),tcollt_left+ctindx);
       }
+      if ( _PRINT_DIAGNOSTICS ) {
+	printf("tp BST has %i entries somewhere in between\n",bst_nNode(bst_tcollt));
+	fflush(stdout);
+      }
       // Recompute min. left and rite and insert in overall tree
-      if ( cindx_tp < N-1 ) {
+      if ( cindx_tp < N-1+(int)tp_left ) {
 	if ( *(bst_tcollt_left+cindx_tp+1-(int)tp_left) == NULL )
-	  *(tcollt_min+cindx_tp+1-(int)tp_left)= dt+1.+ctindx;
+	  *(tcollt_min+cindx_tp+1-(int)tp_left)= dt+1.+ctindx+(float)rand()/(float)(RAND_MAX/1.);
 	else
 	  *(tcollt_min+cindx_tp+1-(int)tp_left)=			\
 	    *(bst_minValueNode(*(bst_tcollt_left+cindx_tp+1-(int)tp_left))->val);
 	bst_tcollt= bst_forceInsert(bst_tcollt,cindx_tp+1-(int)tp_left,
 				  tcollt_min+cindx_tp+1-(int)tp_left);
       }
-      if ( cindx_tp > 0 ) {
+      if ( cindx_tp > (int)tp_left-1 ) {
 	if ( *(bst_tcollt_rite+cindx_tp-(int)tp_left) == NULL )
-	  *(tcollt_min+N+cindx_tp-(int)tp_left)= dt+ctindx;
+	  *(tcollt_min+N+cindx_tp-(int)tp_left)= dt+ctindx+(float)rand()/(float)(RAND_MAX/1.);
 	else
 	  *(tcollt_min+N+cindx_tp-(int)tp_left)=			\
 	    *(bst_minValueNode(*(bst_tcollt_rite+cindx_tp-(int)tp_left))->val);
@@ -379,19 +440,22 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       tdt= ( *next_tcoll_tm - *(ttp + c_in_xt_indx) );
       dv= (*(a + *(sindx+cindx_tp)) \
 	   + (2 * (int)tp_left - 1) * *(m + *(sindx+cindx_tp))  ) * tdt;
-      printf("a: %g, dv: %g\n",*(a + *(sindx+cindx_tp)),dv);
-      fflush(stdout);
+      if ( _PRINT_DIAGNOSTICS ) {
+	printf("a: %g, dv: %g\n",*(a + *(sindx+cindx_tp)),dv);
+	fflush(stdout);
+      }
       *(xt + c_in_xt_indx)+= dv * tdt / 2. + *(vt + c_in_xt_indx) * tdt;
       *(vt + c_in_xt_indx)+= dv;
       *(ttp + c_in_xt_indx)= *next_tcoll_tm;
       // move the collided particle to the appropriate edge, so the tp array
       // remains sorted in the between-massive-particle buckets; edit any
       // other use of the sorted indices
-      printf("cindx_tp: %i, ctindx: %i, newctindx: %i\n",cindx_tp,ctindx,
-	     newctindx);
       fflush(stdout);
       *(ntp_left+cindx_tp)+= 1 - 2 * (int)tp_left;
       newctindx= *(ntp_left+cindx_tp)-1+(int)tp_left;
+      if ( _PRINT_DIAGNOSTICS ) 
+	printf("cindx_tp: %i, ctindx: %i, newctindx: %i\n",cindx_tp,ctindx,
+	       newctindx);
       if ( ctindx != newctindx ) { // If moving tps around
 	tmpi= *(stindx+ newctindx);
 	*(stindx+ newctindx)= *(stindx+ ctindx);
@@ -434,19 +498,23 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  *(vt + c_in_xt_indx) - *(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt,
 	  -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
 	
-	printf("Next rite collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %i\n",
-	     *(xt + c_in_xt_indx),*(vt + c_in_xt_indx),
-	     *(x + c_in_x_indx),*(v + c_in_x_indx),*(a + c_in_x_indx),*(m + c_in_x_indx),tdt,*(t + c_in_x_indx),*next_tcoll_tm,cindx_tp+(int)tp_left);
-	printf("Next rite collision %g\n",*(tcollt_rite+newctindx)-*next_tcoll_tm);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("Next rite collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %i\n",
+		 *(xt + c_in_xt_indx),*(vt + c_in_xt_indx),
+		 *(x + c_in_x_indx),*(v + c_in_x_indx),*(a + c_in_x_indx),*(m + c_in_x_indx),tdt,*(t + c_in_x_indx),*next_tcoll_tm,cindx_tp+(int)tp_left);
+	  printf("Next rite collision %g\n",*(tcollt_rite+newctindx)-*next_tcoll_tm);
+	}
 	if (*(tcollt_rite+newctindx)-*next_tcoll_tm < 0) {
 	  printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME \n" "\033[0m");
 	  fflush(stdout);
 	  abort();
 	}
-	for (jj=0; jj<N; jj++) {
-	  printf("Printing rite BST pre-insert for mass %i\n",jj);
-	  bst_inorder(*(bst_tcollt_rite+jj));
-	  fflush(stdout);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  for (jj=0; jj<N; jj++) {
+	    printf("Printing rite BST pre-insert for mass %i\n",jj);
+	    bst_inorder(*(bst_tcollt_rite+jj));
+	    fflush(stdout);
+	  }
 	}
 	*(bst_tcollt_rite+cindx_tp-1+(int)tp_left)=			\
 	  bst_forceInsert(*(bst_tcollt_rite+cindx_tp-1+(int)tp_left),
@@ -473,11 +541,13 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    -2. * (*(vt + c_in_xt_indx) - *(v + c_in_x_indx) \
 		   - *(a + c_in_x_indx) * tdt)		     \
 	    / *(m + c_in_x_indx);
-	printf("Next left collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %i,%i,%i\n",
-	     *(xt + c_in_xt_indx),*(vt + c_in_xt_indx),
-	       *(x + c_in_x_indx),*(v + c_in_x_indx),*(a + c_in_x_indx),*(m + c_in_x_indx),tdt,*(t + c_in_x_indx),*next_tcoll_tm,cindx_tp,(int)tp_left,newctindx);
-	printf("Next left collision %g\n",
-	       *(tcollt_left+newctindx)-*next_tcoll_tm);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("Next left collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %i,%i,%i\n",
+		 *(xt + c_in_xt_indx),*(vt + c_in_xt_indx),
+		 *(x + c_in_x_indx),*(v + c_in_x_indx),*(a + c_in_x_indx),*(m + c_in_x_indx),tdt,*(t + c_in_x_indx),*next_tcoll_tm,cindx_tp,(int)tp_left,newctindx);
+	  printf("Next left collision %g\n",
+		 *(tcollt_left+newctindx)-*next_tcoll_tm);
+	}
 	if (*(tcollt_left+newctindx)-*next_tcoll_tm < 0) {
 	  printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME \n" "\033[0m");
 	  fflush(stdout);
@@ -494,42 +564,59 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     }
 
     if ( M > 0 ) {
-    tmpN= 0;
-    for (jj=0; jj < N; jj++) {
-      tmpN+= bst_nNode(*(bst_tcollt_rite+jj));
-      tmpN+= bst_nNode(*(bst_tcollt_left+jj));
-      printf("Printing new rite BST in order for mass %i\n",jj);
-      fflush(stdout);
-      bst_inorder(*(bst_tcollt_rite+jj));
-      printf("Printing new left BST in order for mass %i\n",jj);
-      fflush(stdout);
-      bst_inorder(*(bst_tcollt_left+jj));
-    }
-    printf("Printing tp BST in order\n");
-    fflush(stdout);
-    bst_inorder(bst_tcollt);
-    if ( tmpN > 2*M) {
-      printf("Failed\n");
-      fflush(stdout);
-      return;
-    }
+      tmpN= 0;
+      for (jj=0; jj < N; jj++) {
+	tmpN+= bst_nNode(*(bst_tcollt_rite+jj));
+	tmpN+= bst_nNode(*(bst_tcollt_left+jj));
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("Printing new rite BST in order for mass %i\n",jj);
+	  fflush(stdout);
+	  bst_inorder(*(bst_tcollt_rite+jj));
+	  printf("Printing new left BST in order for mass %i\n",jj);
+	  fflush(stdout);
+	  bst_inorder(*(bst_tcollt_left+jj));
+	}
+      }
+      if ( _PRINT_DIAGNOSTICS ) {
+	printf("Printing tp BST in order\n");
+	fflush(stdout);
+	bst_inorder(bst_tcollt);
+      }
+      if ( tmpN > 2*M) {
+	printf("Failed\n");
+	fflush(stdout);
+	return;
+      }
 
-    printf("Order: ");
-    for (jj=0; jj<N;jj++)
-      printf("%g,",*(x+ *(sindx+jj)));
-    printf("\nv: ");
-    for (jj=0; jj<N;jj++)
-      printf("%g,",*(v+ *(sindx+jj)));
-    printf("\n");
-    for (jj=0; jj<M;jj++)
-      printf("%g,",*(xt+ *(stindx+jj)));
-    printf("\nv: ");
-    for (jj=0; jj<M;jj++)
-      printf("%g,",*(vt+ *(stindx+jj)));
-    printf("\n");
-    fflush(stdout);
+      if ( _PRINT_DIAGNOSTICS ) {
+	printf("tp BST has %i entries\n",bst_nNode(bst_tcollt));
+	fflush(stdout);
+      }
+      if ( bst_nNode(bst_tcollt) > 2*N) {
+	printf("tp BST has more than 2N entries, %i to be precise\n",bst_nNode(bst_tcollt));
+	fflush(stdout);
+	abort();
+      }
+	
+      
+      if ( _PRINT_DIAGNOSTICS ) {
+	printf("Order: ");
+	for (jj=0; jj<N;jj++)
+	  printf("%g,",*(x+ *(sindx+jj)));
+	printf("\nv: ");
+	for (jj=0; jj<N;jj++)
+	  printf("%g,",*(v+ *(sindx+jj)));
+	printf("\n");
+	for (jj=0; jj<M;jj++)
+	  printf("%g,",*(xt+ *(stindx+jj)));
+	printf("\nv: ");
+	for (jj=0; jj<M;jj++)
+	  printf("%g,",*(vt+ *(stindx+jj)));
+	printf("\n");
+	fflush(stdout);
+      }
     }
-
+    
     if ( M > 0 )
       *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
   }
@@ -551,9 +638,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   }
   *next_tcoll-= dt;
   if ( M > 0 ) {
-    for (ii=0; ii < N; ii++)
-      printf("ntp_left %i: %i\n",ii,*(ntp_left+ii));
-    fflush(stdout);
+    if ( _PRINT_DIAGNOSTICS ) {
+      for (ii=0; ii < N; ii++)
+	printf("ntp_left %i: %i\n",ii,*(ntp_left+ii));
+      fflush(stdout);
+    }
 
 #pragma omp parallel for schedule(static,chunk) private(ii,jj,tmpd,tmpN,tdt,dv,c_in_xt_indx)
     for (ii=0; ii < N+1; ii++) {
@@ -574,22 +663,26 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       for (jj=0; jj < tmpN; jj++) {
 	c_in_xt_indx= *(stindx + tmpi + jj );
 	tdt= dt - *(ttp + c_in_xt_indx);
-	printf("da %i,%i: %g, dt: %g, x: %g, v: %g\n",ii,jj,tmpd,tdt,
-	       *(xt + c_in_xt_indx),*(vt + c_in_xt_indx));
-	fflush(stdout);
+	if ( _PRINT_DIAGNOSTICS ) {
+	  printf("da %i,%i: %g, dt: %g, x: %g, v: %g\n",ii,jj,tmpd,tdt,
+		 *(xt + c_in_xt_indx),*(vt + c_in_xt_indx));
+	  fflush(stdout);
+	}
 	dv= tmpd * tdt;
 	*(xt + c_in_xt_indx)+= dv * tdt / 2. + *(vt + c_in_xt_indx) * tdt;
 	*(vt + c_in_xt_indx)+= dv;
       }
     }
-    printf("Order at end: ");
-    for (jj=0; jj<N;jj++)
-      printf("%g,",*(x+ *(sindx+jj)));
-    printf("\n");
-    for (jj=0; jj<M;jj++)
-      printf("%g,",*(xt+ *(stindx+jj)));
-    printf("\n");
-    fflush(stdout);
+    if ( _PRINT_DIAGNOSTICS ) {
+      printf("Order at end: ");
+      for (jj=0; jj<N;jj++)
+	printf("%g,",*(x+ *(sindx+jj)));
+      printf("\n");
+      for (jj=0; jj<M;jj++)
+	printf("%g,",*(xt+ *(stindx+jj)));
+      printf("\n");
+      fflush(stdout);
+    }
 
   }
   free(t);
