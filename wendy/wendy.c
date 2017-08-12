@@ -34,9 +34,10 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 			  int * cindx, double * next_tcoll, double * tcoll,
 			  int M, double * xt, double * vt, int * stindx, 
 			  double dt,
-			  int maxcoll, int * err, 
-			  int * ncoll, double * time_elapsed){
-  int cnt_coll,ii, tmpi, jj, kk, tmpN;
+			  int maxcoll, int maxcoll_tp, int * err, 
+			  int * ncoll, double * time_elapsed,
+			  int * ncoll_tp){
+  int cnt_coll,cnt_coll_tp,ii, tmpi, jj, kk, tmpN;
   int c_in_x_indx, c_in_x_next_indx, ctindx, newctindx, cindx_tp, c_in_xt_indx;
   double dv,tdt, dm, tmpd;
   double * next_tcoll_tm;
@@ -53,6 +54,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
   double * ttp;
   cnt_coll= 0;
+  cnt_coll_tp= 0;
   // Build binary search tree for keeping track of collision times
   int * idx= (int *) malloc ( (N-1) * sizeof(int) );
   int * idx_tp;
@@ -146,7 +148,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   } else next_tcoll_tm= &dt; // just so that it is >= dt
   // Time how long the loop takes
   clock_t time_begin= clock();
-  while ( ( *next_tcoll < dt || *next_tcoll_tm < dt ) && cnt_coll < maxcoll ){
+  while ( ( *next_tcoll < dt || *next_tcoll_tm < dt ) \
+	  && cnt_coll < maxcoll && cnt_coll_tp < maxcoll_tp ){
     if ( _PRINT_DIAGNOSTICS ) {
       printf("Next collisions? %g,%g\n",*next_tcoll,*next_tcoll_tm);
       fflush(stdout);
@@ -376,6 +379,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     } else if ( *next_tcoll_tm < dt ){
       // Next handle test-particle -- massive-particle collisions
       // Locate colliding tp, delete from its own BSTs
+      cnt_coll_tp+= 1;
       minNode= bst_minValueNode(bst_tcollt);
       cindx_tp= minNode->idx;
       bst_tcollt= bst_deleteNode(bst_tcollt,next_tcoll_tm);
@@ -693,8 +697,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     free(next_tcoll_tm);
   }
   *ncoll= cnt_coll;
+  *ncoll_tp= cnt_coll_tp;
   if ( cnt_coll == maxcoll )
     *err= -2;
+  if ( cnt_coll_tp == maxcoll_tp )
+    *err= -3;
 }
 
 void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,

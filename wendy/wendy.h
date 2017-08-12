@@ -15,7 +15,7 @@ void _wendy_nbody_onestep(int, double *, double *, double *,
 			  int *, double *, double *,
 			  int, double *, double *, int *,
 			  double,
-			  int,int *,int *,double *);
+			  int,int,int *,int *,double *,int *);
 void _wendy_nbody_harm_onestep(int, double *, double *, double *,
 			       double *,int *,
 			       int *, double *, double *,

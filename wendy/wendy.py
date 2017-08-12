@@ -52,9 +52,11 @@ _wendy_nbody_onestep_func.argtypes=\
      ndpointer(dtype=numpy.int32,flags=ndarrayFlags),
      ctypes.c_double,
      ctypes.c_int,
+     ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_int),
-     ctypes.POINTER(ctypes.c_double)]
+     ctypes.POINTER(ctypes.c_double),
+     ctypes.POINTER(ctypes.c_int)]
 _wendy_nbody_harm_onestep_func= _lib._wendy_nbody_harm_onestep
 _wendy_nbody_harm_onestep_func.argtypes=\
     [ctypes.c_int,
@@ -110,7 +112,8 @@ class MyQuadPoly:
 
 def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
           xt=None,vt=None,
-          maxcoll=100000,warn_maxcoll=False,full_output=False):
+          maxcoll=100000,warn_maxcoll=False,maxcoll_tp=1000000,
+          full_output=False):
     """
     NAME:
        nbody
@@ -128,6 +131,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
        xt= (None) if set, x positions of test particles [M]
        vt= (None) if set, v positions of test particles [M]
        maxcoll= (100000) maximum number of collisions to allow in one time step
+       maxcoll_tp= (1000000) maximum number of collisions between test particles and massive particles to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
     OUTPUT:
@@ -164,6 +168,8 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
         _setup_arrays(x,v,m,omega=omega,xt=xt,vt=vt)
     ncoll_c= ctypes.c_int(0)
     ncoll= 0
+    ncoll_tp_c= ctypes.c_int(0)
+    ncoll_tp= 0
     time_elapsed= ctypes.c_double(0)
     # Simulate the dynamics
     while True:
@@ -172,9 +178,10 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
                                       x,v,a,m,sindx,ctypes.byref(cindx),
                                       ctypes.byref(next_tcoll),
                                       tcoll,nxt,xt,vt,stindx,
-                                      dt,maxcoll,
+                                      dt,maxcoll,maxcoll_tp,
                                       ctypes.byref(err),ctypes.byref(ncoll_c),
-                                      ctypes.byref(time_elapsed))
+                                      ctypes.byref(time_elapsed),
+                                      ctypes.byref(ncoll_tp_c))
         else:
             _wendy_nbody_harm_onestep_func(len(x),
                                            x,v,a,m,sindx,ctypes.byref(cindx),
@@ -185,9 +192,13 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
                                            ctypes.byref(time_elapsed),
                                            omega)
         ncoll+= ncoll_c.value
-        if err.value == -2:
+        ncoll_tp+= ncoll_tp_c.value
+        if err.value == -2 or err.value == -3:
             if warn_maxcoll:
-                warnings.warn("Maximum number of collisions per time step exceeded",RuntimeWarning)
+                if err.value == -2:
+                    warnings.warn("Maximum number of collisions per time step exceeded",RuntimeWarning)
+                if err.value == -3:
+                    warnings.warn("Maximum number of collisions between massive and test particles per time step exceeded",RuntimeWarning)
                 # Re-compute the accelerations
                 x,v,m,a,sindx,cindx,next_tcoll,tcoll,err,xt,vt,stindx=\
                     _setup_arrays(x,v,m,omega=omega,xt=xt,vt=vt)
@@ -195,7 +206,9 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
                 raise RuntimeError("Maximum number of collisions per time step exceeded")
         out= (x,v)
         if nxt > 0: out= out+(xt,vt,)
-        if full_output: out= out+(ncoll,time_elapsed.value,)
+        if full_output: out= out+(ncoll,time_elapsed.value)
+        if full_output and nxt > 0:
+            out= out+(ncoll_tp,)
         yield out
 
 def _setup_arrays(x,v,m,omega=None,xt=None,vt=None):
