@@ -28,7 +28,8 @@ struct node * bst_build(int N,int * idxs, double * vals){
   struct node *root = NULL;
   int ii;
   for (ii=0; ii < N; ii++)
-    root= bst_forceInsert(root,*(idxs+ii),vals+ii);
+    if ( *(vals+ii) >= 0 )
+      root= bst_forceInsert(root,*(idxs+ii),vals+ii);
   return root;
 }
 // Free memory of a tree

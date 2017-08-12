@@ -83,15 +83,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       while (  ( ii < M ) &&						\
 	       ( ( jj < N && *(xt + *(stindx+ii)) < *(x + *(sindx+jj) ) ) \
 		 || ( jj == N ) ) )
-	{
-	  if (_PRINT_DIAGNOSTICS)
-	    printf("%g,",*(xt + *(stindx+ii)));
 	ii++;
-	}
-      if ( _PRINT_DIAGNOSTICS )
-	printf("\n");
-      fflush(stdout);
-
       tp_assign_high= ii;
       tmpN= tp_assign_high - tp_assign_low;
       if ( jj > 0 ) {
@@ -133,14 +125,14 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     for (ii=0; ii < 2*N; ii++) *(idx+ii)= ii;
     tcollt_min= (double *) malloc ( 2*N * sizeof(double) );
     for (jj=0; jj < N; jj++) {
-      if ( *(bst_tcollt_left+jj) == NULL )
-	*(tcollt_min+jj)= dt+1.+jj+(float)rand()/(float)(RAND_MAX/1.);
-      else
+      if ( *(bst_tcollt_left+jj) )
 	*(tcollt_min+jj)= *(bst_minValueNode(*(bst_tcollt_left+jj))->val);
-      if ( *(bst_tcollt_rite+jj) == NULL )
-	*(tcollt_min+N+jj)= dt+1.+N+jj+(float)rand()/(float)(RAND_MAX/1.);
       else
+	*(tcollt_min+jj)= -1;
+      if ( *(bst_tcollt_rite+jj) )
 	*(tcollt_min+N+jj)= *(bst_minValueNode(*(bst_tcollt_rite+jj))->val);
+      else
+	*(tcollt_min+N+jj)= -1;
     }
     bst_tcollt= bst_build(2*N,idx,tcollt_min);
     next_tcoll_tm= (double *) malloc ( sizeof ( double ) );
@@ -341,23 +333,22 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	bst_destroy(*(bst_tcollt_left+*cindx+1));
 	*(bst_tcollt_left+*cindx+1)= NULL;
 	//insert new tcoll in overall bst_tcollt
-	if ( *(bst_tcollt_left+*cindx) == NULL )
-          *(tcollt_min+*cindx)= dt+1.+*cindx+(float)rand()/(float)(RAND_MAX/1.);
-        else
-	  *(tcollt_min+*cindx)=					\
+	if ( *(bst_tcollt_left+*cindx) ) {
+	  *(tcollt_min+*cindx)=						\
 	    *(bst_minValueNode(*(bst_tcollt_left+*cindx))->val);
-	if ( *(bst_tcollt_rite+*cindx+1) == NULL )
-	  *(tcollt_min+N+*cindx+1)= dt+1.+*cindx+(float)rand()/(float)(RAND_MAX/1.);
-	else
+	  bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
+	}
+	if ( *(bst_tcollt_rite+*cindx+1) ) {
 	  *(tcollt_min+N+*cindx+1)=					\
 	    *(bst_minValueNode(*(bst_tcollt_rite+*cindx+1))->val);
+	  bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx+1,
+				      tcollt_min+N+*cindx+1);
+	}
 	if ( _PRINT_DIAGNOSTICS ) {
 	  printf("bst inorder before insert:\n");
 	  bst_inorder(bst_tcollt);
 	  fflush(stdout);
 	}
-	bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
-	bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx+1,tcollt_min+N+*cindx+1);
 	if ( _PRINT_DIAGNOSTICS ) {
 	  printf("tp BST has %i entries after forced insert after deletion\n",bst_nNode(bst_tcollt));
 	  fflush(stdout);
@@ -418,22 +409,20 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       }
       // Recompute min. left and rite and insert in overall tree
       if ( cindx_tp < N-1+(int)tp_left ) {
-	if ( *(bst_tcollt_left+cindx_tp+1-(int)tp_left) == NULL )
-	  *(tcollt_min+cindx_tp+1-(int)tp_left)= dt+1.+ctindx+(float)rand()/(float)(RAND_MAX/1.);
-	else
+	if ( *(bst_tcollt_left+cindx_tp+1-(int)tp_left) ) {
 	  *(tcollt_min+cindx_tp+1-(int)tp_left)=			\
 	    *(bst_minValueNode(*(bst_tcollt_left+cindx_tp+1-(int)tp_left))->val);
-	bst_tcollt= bst_forceInsert(bst_tcollt,cindx_tp+1-(int)tp_left,
-				  tcollt_min+cindx_tp+1-(int)tp_left);
+	  bst_tcollt= bst_forceInsert(bst_tcollt,cindx_tp+1-(int)tp_left,
+				      tcollt_min+cindx_tp+1-(int)tp_left);
+	}
       }
       if ( cindx_tp > (int)tp_left-1 ) {
-	if ( *(bst_tcollt_rite+cindx_tp-(int)tp_left) == NULL )
-	  *(tcollt_min+N+cindx_tp-(int)tp_left)= dt+ctindx+(float)rand()/(float)(RAND_MAX/1.);
-	else
+	if ( *(bst_tcollt_rite+cindx_tp-(int)tp_left) ) {
 	  *(tcollt_min+N+cindx_tp-(int)tp_left)=			\
 	    *(bst_minValueNode(*(bst_tcollt_rite+cindx_tp-(int)tp_left))->val);
-	bst_tcollt= bst_forceInsert(bst_tcollt,N+cindx_tp-(int)tp_left,
-				    tcollt_min+N+cindx_tp-(int)tp_left);
+	  bst_tcollt= bst_forceInsert(bst_tcollt,N+cindx_tp-(int)tp_left,
+				      tcollt_min+N+cindx_tp-(int)tp_left);
+	}
       }
       // Move colliding tp to impact point
       c_in_xt_indx= *(stindx+ctindx);
