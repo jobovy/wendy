@@ -50,6 +50,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   int tp_assign_low, tp_assign_high;
   double * tcollt_min;
   bool tp_left;
+  bool tp_updated= false;
   double * t= (double *) malloc ( N * sizeof(double) );
 #pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
@@ -213,36 +214,29 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       }
       //Also update test particles associated with the swapped pair
       if ( M > 0 ) {
-	c_in_x_indx= *(sindx+ *cindx+1); // bc already flipped
-	c_in_x_next_indx= *(sindx+ *cindx);
-	//First delete node in overall bst_tcollt, left of left, rite of rite
-	if ( *(bst_tcollt_left+*cindx) )
-	  bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+*cindx);
-	/*
-	if ( _PRINT_DIAGNOSTICS ) {
-	  if ( *(bst_tcollt_left+*cindx) )
-	    printf("tp BST has %i entries in the midst of deletion, after deleting %g, cindx=%i\n",bst_nNode(bst_tcollt),*(tcollt_min+*cindx),*cindx);
-	  else
-	    printf("tp BST has %i entries, nothing deleted, bc %g, cindx=%i\n",bst_nNode(bst_tcollt),*(tcollt_min+*cindx),*cindx);
-	}
-	*/
-	if ( *(bst_tcollt_rite+*cindx+1) )
-	  bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+N+*cindx+1);
-	*(tcollt_min+*cindx)= -1;
-	*(tcollt_min+N+*cindx+1)= -1;
 	//Assign left tp from left mp to left tp of rite mp
 	if ( *cindx > 0 ) {
 	  tmpN= *(ntp_left+*cindx)-*(ntp_left+*cindx-1);
-	  tmpi= *(ntp_left+*cindx-1);
 	}
 	else {
 	  tmpN= *(ntp_left+*cindx);
-	  tmpi= 0;
 	}
-	tmpd= *(a + c_in_x_next_indx) + *(m + c_in_x_next_indx); // tp accel.
-	for (kk=0; kk < tmpN; kk++) {
-	  tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
-	  *(tcollt_left+tmpi+kk) = *next_tcoll + _solve_coll_quad(		      \
+	if ( tmpN > 0 ) { // there is a left tree to move
+	  if ( *cindx > 0 ) {
+	    tmpi= *(ntp_left+*cindx-1);
+	  }
+	  else {
+	    tmpi= 0;
+	  }
+	  c_in_x_indx= *(sindx+ *cindx+1); // bc already flipped
+	  c_in_x_next_indx= *(sindx+ *cindx);
+	  //First delete node in overall bst_tcollt, left of left, rite of rite
+	  if ( *(bst_tcollt_left+*cindx) )
+	    bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+*cindx);
+	  tmpd= *(a + c_in_x_next_indx) + *(m + c_in_x_next_indx); // tp accel.
+	  for (kk=0; kk < tmpN; kk++) {
+	    tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
+	    *(tcollt_left+tmpi+kk) = *next_tcoll + _solve_coll_quad(	\
 	    *(xt + *(stindx+tmpi+kk)) + *(vt + *(stindx+tmpi+kk)) * tdt \
 	    + 0.5 * tmpd * tdt * tdt - *(x + c_in_x_next_indx),
 	    *(vt + *(stindx+tmpi+kk)) + tmpd * tdt - *(v + c_in_x_next_indx),
@@ -274,73 +268,89 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	      abort();
 	  }
 
+	  }
+	  *(bst_tcollt_left+*cindx)= bst_build(tmpN,
+					       idx_tp+tmpi,
+					       tcollt_left+tmpi);
+	  bst_destroy(*(bst_tcollt_rite+*cindx));
+	  *(bst_tcollt_rite+*cindx)= NULL;
+	  //insert new tcoll in overall bst_tcollt
+	  //if ( *(bst_tcollt_left+*cindx) ) {
+	  *(tcollt_min+*cindx)=						\
+	    *(bst_minValueNode(*(bst_tcollt_left+*cindx))->val);
+	  bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
+	  tp_updated= true;
+	  //}
 	}
-	*(bst_tcollt_left+*cindx)= bst_build(tmpN,
-					     idx_tp+tmpi,
-					     tcollt_left+tmpi);
-	bst_destroy(*(bst_tcollt_rite+*cindx));
-	*(bst_tcollt_rite+*cindx)= NULL;
 	//Assign rite tp from rite mp to rite tp of left mp
 	if ( *cindx < N-2 ) {
 	  tmpN= *(ntp_left+*cindx+2)-*(ntp_left+*cindx+1);
-	  tmpi= *(ntp_left+*cindx+1);
 	}
 	else {
 	  tmpN= M-*(ntp_left+*cindx+1);
-	  tmpi= *(ntp_left+*cindx+1);
 	}
-	tmpd= *(a + c_in_x_indx) - *(m + c_in_x_indx); // tp acceleration
-	for (kk=0; kk < tmpN; kk++) {
-	  tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
-	  *(tcollt_rite+tmpi+kk) = *next_tcoll + _solve_coll_quad(		      \
+	if ( tmpN > 0 ) { // there is a right tree to move
+	  if ( *cindx < N-2 ) {
+	    tmpi= *(ntp_left+*cindx+1);
+	  }
+	  else {
+	    tmpi= *(ntp_left+*cindx+1);
+	  }
+	  c_in_x_indx= *(sindx+ *cindx+1); // bc already flipped
+	  c_in_x_next_indx= *(sindx+ *cindx);
+	  if ( *(bst_tcollt_rite+*cindx+1) )
+	    bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+N+*cindx+1);
+	  //*(tcollt_min+*cindx)= -1;
+	  //*(tcollt_min+N+*cindx+1)= -1;
+	  tmpd= *(a + c_in_x_indx) - *(m + c_in_x_indx); // tp acceleration
+	  for (kk=0; kk < tmpN; kk++) {
+	    tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
+	    *(tcollt_rite+tmpi+kk) = *next_tcoll + _solve_coll_quad(	\
 	    *(xt + *(stindx+tmpi+kk)) + *(vt + *(stindx+tmpi+kk)) * tdt \
 	    + 0.5 * tmpd * tdt * tdt- *(x + c_in_x_indx),
 	    *(vt + *(stindx+tmpi+kk)) + tmpd * tdt - *(v + c_in_x_indx),
 	    -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
-	  if ( *(tcollt_rite+tmpi+kk)-*next_tcoll < 0 ) {
-	    if ( _PRINT_DIAGNOSTICS ) {
-	      bst_inorder(bst_tcollt);
-	      printf("Next collisions? %g,%g in %g\n",
-		     *next_tcoll,*next_tcoll_tm,dt);
-	      fflush(stdout);
-	      bst_inorder(*(bst_tcollt_rite+*cindx+1));
-	      printf("Rite collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
-		     *cindx,tmpi+kk,tmpN,
-		     *(xt + *(stindx+tmpi+kk)),
-		     *(vt + *(stindx+tmpi+kk)),
-		     tdt,
-		     tmpd,
-		     *(x + c_in_x_next_indx),
-		     *(v + c_in_x_next_indx),
-		     *(xt + *(stindx+tmpi+kk))		\
-		     + *(vt + *(stindx+tmpi+kk)) * tdt	\
-		     + 0.5 * tmpd * tdt * tdt,
-		     *(vt + *(stindx+tmpi+kk)) + tmpd * tdt,
-		     *(ttp + *(stindx+tmpi+kk)));
-	      printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME %g\n" "\033[0m",*(tcollt_rite+tmpi+kk)-*next_tcoll);
-	      fflush(stdout);
+	    if ( *(tcollt_rite+tmpi+kk)-*next_tcoll < 0 ) {
+	      if ( _PRINT_DIAGNOSTICS ) {
+		bst_inorder(bst_tcollt);
+		printf("Next collisions? %g,%g in %g\n",
+		       *next_tcoll,*next_tcoll_tm,dt);
+		fflush(stdout);
+		bst_inorder(*(bst_tcollt_rite+*cindx+1));
+		printf("Rite collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+		       *cindx,tmpi+kk,tmpN,
+		       *(xt + *(stindx+tmpi+kk)),
+		       *(vt + *(stindx+tmpi+kk)),
+		       tdt,
+		       tmpd,
+		       *(x + c_in_x_next_indx),
+		       *(v + c_in_x_next_indx),
+		       *(xt + *(stindx+tmpi+kk))	\
+		       + *(vt + *(stindx+tmpi+kk)) * tdt	\
+		       + 0.5 * tmpd * tdt * tdt,
+		       *(vt + *(stindx+tmpi+kk)) + tmpd * tdt,
+		       *(ttp + *(stindx+tmpi+kk)));
+		printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME %g\n" "\033[0m",*(tcollt_rite+tmpi+kk)-*next_tcoll);
+		fflush(stdout);
+	      }
+	      abort();
 	    }
-	    abort();
+	    
 	  }
-
-	}
-
-	*(bst_tcollt_rite+*cindx+1)= bst_build(tmpN,
-					       idx_tp+tmpi,
-					       tcollt_rite+tmpi);
-	bst_destroy(*(bst_tcollt_left+*cindx+1));
-	*(bst_tcollt_left+*cindx+1)= NULL;
-	//insert new tcoll in overall bst_tcollt
-	if ( *(bst_tcollt_left+*cindx) ) {
-	  *(tcollt_min+*cindx)=						\
-	    *(bst_minValueNode(*(bst_tcollt_left+*cindx))->val);
-	  bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
-	}
-	if ( *(bst_tcollt_rite+*cindx+1) ) {
+	  
+	  *(bst_tcollt_rite+*cindx+1)= bst_build(tmpN,
+						 idx_tp+tmpi,
+						 tcollt_rite+tmpi);
+	  bst_destroy(*(bst_tcollt_left+*cindx+1));
+	  *(bst_tcollt_left+*cindx+1)= NULL;
+	  //insert new tcoll in overall bst_tcollt
+	  //if ( *(bst_tcollt_rite+*cindx+1) ) {
 	  *(tcollt_min+N+*cindx+1)=					\
 	    *(bst_minValueNode(*(bst_tcollt_rite+*cindx+1))->val);
 	  bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx+1,
 				      tcollt_min+N+*cindx+1);
+	  tp_updated= true;
+	  //}
 	}
 	/*
 	if ( _PRINT_ALL_DIAGNOSTICS ) {
@@ -540,9 +550,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	bst_tcollt= bst_forceInsert(bst_tcollt,cindx_tp+(int)tp_left,
 				    tcollt_min+cindx_tp+(int)tp_left);
       }
+      tp_updated= true;
     }
-    if ( M > 0 )
+    if ( M > 0 && tp_updated ) {
       *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
+      tp_updated= false; // reset
+    }
   }
   clock_t time_end= clock();
   *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
