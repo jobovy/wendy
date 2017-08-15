@@ -19,8 +19,12 @@ struct node * bst_forceInsert(struct node * node, int idx, double * val){
   // Build tree using recurrence
   if (*val < *(node->val))
     node->left= bst_forceInsert(node->left,idx,val);
-  else if (*val >= *(node->val))
+  else if (*val > *(node->val))
     node->right= bst_forceInsert(node->right,idx,val);
+  else if (*val == *(node->val)) {
+    *val *= (1.+1e-15);
+    node->right= bst_forceInsert(node->right,idx,val);
+  }
   return node;
 }
 // Building a full tree
