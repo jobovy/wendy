@@ -145,10 +145,9 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   while ( ( *next_tcoll < dt || *next_tcoll_tm < dt ) \
 	  && cnt_coll < maxcoll && cnt_coll_tp < maxcoll_tp ){
     /*
-    if ( _PRINT_DIAGNOSTICS ) {
-      printf("Next collisions? %g,%g\n",*next_tcoll,*next_tcoll_tm);
-      fflush(stdout);
-    }
+      if ( _PRINT_DIAGNOSTICS ) {
+    printf("Next collisions? %g,%g\n",*next_tcoll,*next_tcoll_tm);
+    fflush(stdout);
     */
     if ( M == 0 || *next_tcoll < *next_tcoll_tm ) {
       cnt_coll+= 1;
@@ -244,6 +243,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 
 	  if ( *(tcollt_left+tmpi+kk)-*next_tcoll < 0 ) {
 	    //	    if ( _PRINT_DIAGNOSTICS ) {
+	    printf("Printing tp bst in order at end\n");
 	    bst_inorder(bst_tcollt);
 	    printf("Next collisions? %g,%g in %g\n",
 		   *next_tcoll,*next_tcoll_tm,dt);
@@ -275,12 +275,10 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  bst_destroy(*(bst_tcollt_rite+*cindx));
 	  *(bst_tcollt_rite+*cindx)= NULL;
 	  //insert new tcoll in overall bst_tcollt
-	  //if ( *(bst_tcollt_left+*cindx) ) {
 	  *(tcollt_min+*cindx)=						\
 	    *(bst_minValueNode(*(bst_tcollt_left+*cindx))->val);
 	  bst_tcollt= bst_forceInsert(bst_tcollt,*cindx,tcollt_min+*cindx);
 	  tp_updated= true;
-	  //}
 	}
 	//Assign rite tp from rite mp to rite tp of left mp
 	if ( *cindx < N-2 ) {
@@ -300,8 +298,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  c_in_x_next_indx= *(sindx+ *cindx);
 	  if ( *(bst_tcollt_rite+*cindx+1) )
 	    bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+N+*cindx+1);
-	  //*(tcollt_min+*cindx)= -1;
-	  //*(tcollt_min+N+*cindx+1)= -1;
 	  tmpd= *(a + c_in_x_indx) - *(m + c_in_x_indx); // tp acceleration
 	  for (kk=0; kk < tmpN; kk++) {
 	    tdt= *next_tcoll - *(ttp + *(stindx+tmpi+kk));
@@ -312,6 +308,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
 	    if ( *(tcollt_rite+tmpi+kk)-*next_tcoll < 0 ) {
 	      if ( _PRINT_DIAGNOSTICS ) {
+		printf("Printing tp bst in order\n");
 		bst_inorder(bst_tcollt);
 		printf("Next collisions? %g,%g in %g\n",
 		       *next_tcoll,*next_tcoll_tm,dt);
@@ -344,13 +341,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  bst_destroy(*(bst_tcollt_left+*cindx+1));
 	  *(bst_tcollt_left+*cindx+1)= NULL;
 	  //insert new tcoll in overall bst_tcollt
-	  //if ( *(bst_tcollt_rite+*cindx+1) ) {
 	  *(tcollt_min+N+*cindx+1)=					\
 	    *(bst_minValueNode(*(bst_tcollt_rite+*cindx+1))->val);
 	  bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx+1,
 				      tcollt_min+N+*cindx+1);
 	  tp_updated= true;
-	  //}
 	}
 	/*
 	if ( _PRINT_ALL_DIAGNOSTICS ) {
@@ -380,7 +375,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       cnt_coll_tp+= 1;
       minNode= bst_minValueNode(bst_tcollt);
       cindx_tp= minNode->idx;
-      bst_tcollt= bst_deleteNode(bst_tcollt,next_tcoll_tm);
+      bst_tcollt= bst_deleteNode(bst_tcollt,tcollt_min+cindx_tp);
       if ( cindx_tp < N ) { // collision from the left
 	tp_left= true;
 	if ( cindx_tp > 0 )
@@ -388,7 +383,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	minNode= bst_minValueNode(*(bst_tcollt_left+cindx_tp));
 	ctindx= minNode->idx;
 	*(bst_tcollt_left+cindx_tp)=bst_deleteNode(*(bst_tcollt_left+cindx_tp),
-						    next_tcoll_tm);
+						   tcollt_left+ctindx);
 	if ( cindx_tp > 0 )
 	  *(bst_tcollt_rite+cindx_tp-1)=\
 	    bst_deleteNode(*(bst_tcollt_rite+cindx_tp-1),tcollt_rite+ctindx);
@@ -400,11 +395,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	minNode= bst_minValueNode(*(bst_tcollt_rite+cindx_tp));
 	ctindx= minNode->idx;
 	*(bst_tcollt_rite+cindx_tp)=bst_deleteNode(*(bst_tcollt_rite+cindx_tp),
-						    next_tcoll_tm);
+						   tcollt_rite+ctindx);
 	if ( cindx_tp < N-1 )
 	  *(bst_tcollt_left+cindx_tp+1)=\
 	    bst_deleteNode(*(bst_tcollt_left+cindx_tp+1),tcollt_left+ctindx);
       }
+      //printf("Collision at %i from left: %i\n",cindx_tp,(int)tp_left);
       // Recompute min. left and rite and insert in overall tree
       if ( cindx_tp < N-1+(int)tp_left ) {
 	if ( *(bst_tcollt_left+cindx_tp+1-(int)tp_left) ) {
@@ -442,11 +438,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       fflush(stdout);
       *(ntp_left+cindx_tp)+= 1 - 2 * (int)tp_left;
       newctindx= *(ntp_left+cindx_tp)-1+(int)tp_left;
-      /*
-      if ( _PRINT_DIAGNOSTICS ) 
-	printf("cindx_tp: %i, ctindx: %i, newctindx: %i\n",cindx_tp,ctindx,
-	       newctindx);
-      */
       if ( ctindx != newctindx ) { // If moving tps around
 	tmpi= *(stindx+ newctindx);
 	*(stindx+ newctindx)= *(stindx+ ctindx);
@@ -552,6 +543,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       }
       tp_updated= true;
     }
+  
     if ( M > 0 && tp_updated ) {
       *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
       tp_updated= false; // reset
