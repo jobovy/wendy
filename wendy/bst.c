@@ -22,7 +22,6 @@ struct node * bst_forceInsert(struct node * node, int idx, double * val){
   else if (*val > *(node->val))
     node->right= bst_forceInsert(node->right,idx,val);
   else if (*val == *(node->val)) {
-    *val *= (1.+1e-15);
     node->right= bst_forceInsert(node->right,idx,val);
   }
   return node;
@@ -55,6 +54,9 @@ struct node * bst_deleteNode(struct node * root,double * val){
     root->left= bst_deleteNode(root->left,val);
   else if (*val > *(root->val))
     root->right= bst_deleteNode(root->right,val);
+  else if ( val != root->val ) {// duplicate, should be on the right
+    root->right= bst_deleteNode(root->right,val);   
+  }
   // Found the node, now delete
   else {
     // If just one child, move child to node
