@@ -539,15 +539,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME \n" "\033[0m");
 	    fflush(stdout);
 	  */
-	    if ( *(tcollt_left+newctindx)-*next_tcoll_tm > -1e-12 ) {
-	      *(tcollt_left+newctindx)= *next_tcoll_tm;
-	      *(xt + c_in_xt_indx)= *(x + c_in_x_indx) \
-		+ *(v + c_in_x_indx) * tdt		\
-		+ 0.5 * *(a + c_in_x_indx) * tdt * tdt;
-	    }
-	    else {// LCOV_EXCL_START
-	      abort();
-	    }// LCOV_EXCL_STOP
+	  if ( *(tcollt_left+newctindx)-*next_tcoll_tm > -1e-12 ) 
+	    *(tcollt_left+newctindx)= *next_tcoll_tm;
+	  else {// LCOV_EXCL_START
+	    abort();
+	  }// LCOV_EXCL_STOP
 	}
 	*(bst_tcollt_left+cindx_tp+(int)tp_left)=			\
 	  bst_forceInsert(*(bst_tcollt_left+cindx_tp+(int)tp_left),
