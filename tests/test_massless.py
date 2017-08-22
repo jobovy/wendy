@@ -82,4 +82,33 @@ def test_selfgravitating():
         cnt+= 1
     return None
 
-    
+def test_gravcollapse_manymanyparticles():
+    # Run the gravitational collapse example with 100,000 massless particles
+    # until just when it collapses, to resolve multiple collisions at the same 
+    # time
+    N= 1001
+    M= 100002
+    dx= numpy.pi
+    V0= 0.001
+    # Sample massive
+    x= dx*(numpy.arange(N)-N//2)/N
+    v= -V0*numpy.sin(x)
+    m= numpy.ones(N)/float(N)
+    # Sample massless
+    xtp= dx*(numpy.arange(M)-M//2)/M+numpy.random.uniform(size=M)*dx*10.**-9.
+    vtp= -V0*numpy.sin(xtp)
+    # Setup generator
+    dt= 0.005
+    g= wendy.nbody(x,v,m,dt,xt=xtp,vt=vtp,
+                   maxcoll=100000000,maxcoll_tp=10000000000,
+                   full_output=True)
+    E= wendy.energy(x,v,m)
+    cnt= 0
+    while cnt < 354:
+        tx,tv, txt, tvt,ncoll,_,ncoll_tp= next(g)
+        tE= wendy.energy(tx,tv,m)
+        assert numpy.fabs(E-tE) < 10.**-10., 'Energy of massive particles not conserved during test'
+        assert numpy.fabs((numpy.std(tx)-numpy.std(txt))) < 10.**-4., 'Massless particles do not trace massive particles in x'
+        assert numpy.fabs((numpy.std(tv)-numpy.std(tvt))) < 10.**-4., 'Massless particles do not trace massive particles in v'
+        cnt+=1
+    return None
