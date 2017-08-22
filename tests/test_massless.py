@@ -75,17 +75,46 @@ def test_selfgravitating():
     cnt= 0
     while cnt < 100:
         tx,tv, txt, tvt= next(g)
-#        from galpy.util import save_pickles
-#        save_pickles('test.sav',tx,tv,m,txt,tvt)
-        #print(cnt,numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True,xt=txt,vt=tvt)-Et)/Et))/numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True)-E)/E)))
         assert numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True,xt=txt,vt=tvt)-Et)/Et)) < 2.*numpy.amax(numpy.fabs((wendy.energy(tx,tv,m,individual=True)-E)/E)), "Energy of massless particles not conserved during simple N-body integration of equilibrium disk"
         cnt+= 1
+    return None
+
+def test_massless_stuck_left():
+    # Test that the case where a massless particle is stuck between two massive
+    # particles that are colliding is handled correctly (such a particle 
+    # shouldn't be there, but can end up there because of round-off)
+    load_arr= numpy.load('test_data/massless_stuck.npz')
+    g= wendy.nbody(load_arr['x'],load_arr['v'],load_arr['m'],
+                   0.00000197,
+                   xt=load_arr['xt'],vt=load_arr['vt'],
+                   maxcoll_tp=10000000000000000,
+                   maxcoll=10000000000000000)
+    E= wendy.energy(load_arr['x'],load_arr['v'],load_arr['m'])
+    tx,tv, txt, tvt= next(g)
+    assert numpy.fabs(E-wendy.energy(tx,tv,load_arr['m'])) < 10**-10., 'Energy not conserved when integrating N-body system'
+    assert numpy.all(True^numpy.isnan(txt)), 'Massless particles fail when integrating N-body system'
+    assert numpy.all(True^numpy.isnan(tvt)), 'Massless particles fail when integrating N-body system'
+    return None
+
+def test_massless_stuck_right():
+    # Same as above, but mirror, such that the particle is stuck in a different manner
+    load_arr= numpy.load('test_data/massless_stuck.npz')
+    g= wendy.nbody(-load_arr['x'],-load_arr['v'],load_arr['m'],
+                    0.00000197,
+                    xt=-load_arr['xt'],vt=-load_arr['vt'],
+                    maxcoll_tp=10000000000000000,
+                    maxcoll=10000000000000000)
+    E= wendy.energy(-load_arr['x'],-load_arr['v'],load_arr['m'])
+    tx,tv, txt, tvt= next(g)
+    assert numpy.fabs(E-wendy.energy(tx,tv,load_arr['m'])) < 10**-10., 'Energy not conserved when integrating N-body system'
+    assert numpy.all(True^numpy.isnan(txt)), 'Massless particles fail when integrating N-body system'
+    assert numpy.all(True^numpy.isnan(tvt)), 'Massless particles fail when integrating N-body system'
     return None
 
 def test_gravcollapse_manymanyparticles():
     # Run the gravitational collapse example with 100,000 massless particles
     # until just when it collapses, to resolve multiple collisions at the same 
-    # time
+    # time and generally stress test the integration
     N= 1001
     M= 100002
     dx= numpy.pi
@@ -97,14 +126,28 @@ def test_gravcollapse_manymanyparticles():
     # Sample massless
     xtp= dx*(numpy.arange(M)-M//2)/M+numpy.random.uniform(size=M)*dx*10.**-9.
     vtp= -V0*numpy.sin(xtp)
-    # Setup generator
-    dt= 0.005
+    # Setup generator, go to just before collapse, with pretty big dt
+    dt= 0.05
     g= wendy.nbody(x,v,m,dt,xt=xtp,vt=vtp,
                    maxcoll=100000000,maxcoll_tp=10000000000,
                    full_output=True)
     E= wendy.energy(x,v,m)
     cnt= 0
-    while cnt < 354:
+    while cnt < 35:
+        tx,tv, txt, tvt,ncoll,_,ncoll_tp= next(g)
+        tE= wendy.energy(tx,tv,m)
+        assert numpy.fabs(E-tE) < 10.**-10., 'Energy of massive particles not conserved during test'
+        assert numpy.fabs((numpy.std(tx)-numpy.std(txt))) < 10.**-4., 'Massless particles do not trace massive particles in x'
+        assert numpy.fabs((numpy.std(tv)-numpy.std(tvt))) < 10.**-4., 'Massless particles do not trace massive particles in v'
+        cnt+=1
+    # Setup generator again, take small steps
+    dt= 0.001
+    g= wendy.nbody(tx,tv,m,dt,xt=txt,vt=tvt,
+                   maxcoll=100000000,maxcoll_tp=10000000000,
+                   full_output=True)
+    E= wendy.energy(x,v,m)
+    cnt= 0
+    while cnt < 17:
         tx,tv, txt, tvt,ncoll,_,ncoll_tp= next(g)
         tE= wendy.energy(tx,tv,m)
         assert numpy.fabs(E-tE) < 10.**-10., 'Energy of massive particles not conserved during test'

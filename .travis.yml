@@ -19,6 +19,9 @@ before_install:
  - conda update -q conda
  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy pytest
  - source activate test-environment
+# Download data necessary for some tests
+ - mkdir test_data
+ - wget http://astro.utoronto.ca/~bovy/wendy_test_data/massless_stuck.npz -O test_data/massless_stuck.npz
 # command to install dependencies
 install:
  - pip install 'coverage==4.1' --force-reinstall # necessary bc of backward incompatible change in 4.2 about combining reports
