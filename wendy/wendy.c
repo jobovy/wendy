@@ -8,8 +8,6 @@
 #include <time.h>
 #include <wendy.h>
 #include <bst.h>
-bool _PRINT_DIAGNOSTICS= false;
-bool _PRINT_ALL_DIAGNOSTICS= false;
 double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
   double mba;
@@ -133,27 +131,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     next_tcoll_tm= (double *) malloc ( sizeof ( double ) );
     *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
     free(idx);
-    /*
-    if ( _PRINT_DIAGNOSTICS ) {
-	printf("Printing tp BST in order\n");
-	fflush(stdout);
-	bst_inorder(bst_tcollt);
-    }
-    */
   } else next_tcoll_tm= &dt; // just so that it is >= dt
   // Time how long the loop takes
   clock_t time_begin= clock();
   while ( ( *next_tcoll < dt || *next_tcoll_tm < dt ) \
 	  && cnt_coll < maxcoll && cnt_coll_tp < maxcoll_tp ){
-    /*
-      if ( _PRINT_DIAGNOSTICS ) {*/
-    /*
-    if ( *next_tcoll > 0.000 ) {
-      printf("Next collisions? %.30f,%.30f, %i\n",*next_tcoll,*next_tcoll_tm,
-	     *cindx);
-      fflush(stdout);
-    }
-    */
     if ( M == 0 || *next_tcoll < *next_tcoll_tm ) {
       // If there are test particles, first check that none are between the 
       // massive particles (can happen due to round-off errors)
@@ -186,11 +168,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  bst_tcollt= bst_forceInsert(bst_tcollt,N+*cindx,tcollt_min+N+*cindx);
 	  okay= true;
 	}
-	if ( !okay) {
+	if ( !okay) {// LCOV_EXCL_START
 	  printf("Test particle stuck between massive particles, aborting...\n");
 	  fflush(stdout);
 	  abort();
-	} else {
+	} else {// LCOV_EXCL_STOP
 	  okay= false;
 	  *next_tcoll_tm= *(bst_minValueNode(bst_tcollt)->val);
 	  continue;
@@ -222,9 +204,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       *(a + c_in_x_indx)= *(a + c_in_x_next_indx);
       *(a + c_in_x_next_indx)= tmpd;
       // Update collision times, solution for delta x = 0
-      //printf("Collide in %f\n",2.* (*(v + c_in_x_indx) - *(v + c_in_x_next_indx)) /
-      //	   (*(a + c_in_x_next_indx) - *(a + c_in_x_indx)));
-      //fflush(stdout);
       tmpd= 2.* (*(v + c_in_x_indx) - *(v + c_in_x_next_indx)) / 
 	(*(a + c_in_x_next_indx) - *(a + c_in_x_indx));
       bst_tcoll= bst_deleteNode(bst_tcoll,tcoll+*cindx);
@@ -288,13 +267,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    0.5 * *(m + c_in_x_next_indx)); //rel. a = indiv. mas
 
 	  if ( *(tcollt_left+tmpi+kk)-*next_tcoll < 0 ) {
-	    //	    if ( _PRINT_DIAGNOSTICS ) {
-	    printf("Printing tp bst in order at end\n");
-	    bst_inorder(bst_tcollt);
-	    printf("Next collisions? %g,%g in %g\n",
-		   *next_tcoll,*next_tcoll_tm,dt);
-	    fflush(stdout);
-	    bst_inorder(*(bst_tcollt_left+*cindx));
+	    /*
 	      printf("Left collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
 		     *cindx,tmpi+kk,tmpN,
 		     *(xt + *(stindx+tmpi+kk)),
@@ -310,12 +283,13 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 		     *(ttp + *(stindx+tmpi+kk)));
 	      printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME %g \n" "\033[0m",*(tcollt_left+tmpi+kk)-*next_tcoll);
 	      fflush(stdout);
-	      //	    }
+	    }
+	    */
 	    if ( *(tcollt_left+tmpi+kk)-*next_tcoll > -1e-12 )
 	      *(tcollt_left+tmpi+kk)= *next_tcoll;
-	    else {
+	    else {// LCOV_EXCL_START
 	      abort();
-	    }
+	    }// LCOV_EXCL_STOP
 	  }
 	  }
 	  *(bst_tcollt_left+*cindx)= bst_build(tmpN,
@@ -356,13 +330,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	    *(vt + *(stindx+tmpi+kk)) + tmpd * tdt - *(v + c_in_x_indx),
 	    -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
 	    if ( *(tcollt_rite+tmpi+kk)-*next_tcoll < 0 ) {
-	      //if ( _PRINT_DIAGNOSTICS ) {
-		printf("Printing tp bst in order\n");
-		bst_inorder(bst_tcollt);
-		printf("Next collisions? %g,%g in %g\n",
-		       *next_tcoll,*next_tcoll_tm,dt);
-		fflush(stdout);
-		bst_inorder(*(bst_tcollt_rite+*cindx+1));
+	      /*
 		printf("Rite collision data: %i,%i,%i,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
 		       *cindx,tmpi+kk,tmpN,
 		       *(xt + *(stindx+tmpi+kk)),
@@ -378,12 +346,13 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 		       *(ttp + *(stindx+tmpi+kk)));
 		printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME %g\n" "\033[0m",*(tcollt_rite+tmpi+kk)-*next_tcoll);
 		fflush(stdout);
-		//}
+		}
+	      */
 	      if ( *(tcollt_rite+tmpi+kk)-*next_tcoll > -1e-12 )
 		*(tcollt_rite+tmpi+kk)= *next_tcoll;
-	      else {
+	      else {// LCOV_EXCL_START
 		abort();
-	      }
+	      }// LCOV_EXCL_STOP
 	    }
 	  }
 	  
@@ -399,28 +368,11 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 				      tcollt_min+N+*cindx+1);
 	  tp_updated= true;
 	}
-	/*
-	if ( _PRINT_ALL_DIAGNOSTICS ) {
-	  for (jj=0; jj < N; jj++) {
-	    printf("Printing new rite BST in order for mass %i\n",jj);
-	    fflush(stdout);
-	    bst_inorder(*(bst_tcollt_rite+jj));
-	    printf("Printing new left BST in order for mass %i\n",jj);
-	    fflush(stdout);
-	    bst_inorder(*(bst_tcollt_left+jj));
-	  }
-	  printf("Printing tp BST in order\n");
-	  fflush(stdout);
-	  bst_inorder(bst_tcollt);
-	}
-	*/
       }
       // Find minimum
       minNode= bst_minValueNode(bst_tcoll);
       *cindx= minNode->idx;
       *next_tcoll= *minNode->val;
-      //printf("Next one %f\n",*next_tcoll);
-      //fflush(stdout);
     } else if ( *next_tcoll_tm < dt ){
       // Next handle test-particle -- massive-particle collisions
       // Locate colliding tp, delete from its own BSTs
@@ -452,7 +404,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  *(bst_tcollt_left+cindx_tp+1)=\
 	    bst_deleteNode(*(bst_tcollt_left+cindx_tp+1),tcollt_left+ctindx);
       }
-      //printf("Collision at %i from left: %i\n",cindx_tp,(int)tp_left);
       // Recompute min. left and rite and insert in overall tree
       if ( cindx_tp < N-1+(int)tp_left ) {
 	if ( *(bst_tcollt_left+cindx_tp+1-(int)tp_left) ) {
@@ -475,12 +426,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       tdt= ( *next_tcoll_tm - *(ttp + c_in_xt_indx) );
       dv= (*(a + *(sindx+cindx_tp)) \
 	   + (2 * (int)tp_left - 1) * *(m + *(sindx+cindx_tp))  ) * tdt;
-      /*
-      if ( _PRINT_DIAGNOSTICS ) {
-	printf("a: %g, dv: %g\n",*(a + *(sindx+cindx_tp)),dv);
-	fflush(stdout);
-      }
-      */
       *(xt + c_in_xt_indx)+= dv * tdt / 2. + *(vt + c_in_xt_indx) * tdt;
       *(vt + c_in_xt_indx)+= dv;
       *(ttp + c_in_xt_indx)= *next_tcoll_tm;
@@ -533,17 +478,19 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 	  *(vt + c_in_xt_indx) - *(v + c_in_x_indx) - *(a + c_in_x_indx) * tdt,
 	  -0.5 * *(m + c_in_x_indx)); //rel. a = indiv. mass
 	if (*(tcollt_rite+newctindx)-*next_tcoll_tm < 0) {
+	  /*
 	    printf("Next rite collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %i\n",
 		   *(xt + c_in_xt_indx),*(vt + c_in_xt_indx),
 		   *(x + c_in_x_indx),*(v + c_in_x_indx),*(a + c_in_x_indx),*(m + c_in_x_indx),tdt,*(t + c_in_x_indx),*next_tcoll_tm,cindx_tp+(int)tp_left);
 	    printf("Next rite collision %g\n",*(tcollt_rite+newctindx)-*next_tcoll_tm);
 	    printf("\033[1m\033[30m" " NEGATIVE RITE COLLISION TIME \n" "\033[0m");
 	    fflush(stdout);
+	  */
 	  if ( *(tcollt_rite+newctindx)-*next_tcoll_tm > -1e-12 )
 	    *(tcollt_rite+newctindx)= *next_tcoll_tm;
-	  else {
+	  else {// LCOV_EXCL_START
 	    abort();
-	  }
+	  }// LCOV_EXCL_STOP
 	}
 	*(bst_tcollt_rite+cindx_tp-1+(int)tp_left)=			\
 	  bst_forceInsert(*(bst_tcollt_rite+cindx_tp-1+(int)tp_left),
@@ -572,6 +519,7 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 		   - *(a + c_in_x_indx) * tdt)		     \
 	    / *(m + c_in_x_indx);
 	if (*(tcollt_left+newctindx)-*next_tcoll_tm < 0) {
+	  /*
 	    printf("Next left collision data %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %i,%i,%i\n",
 		   *(xt + c_in_xt_indx) - *(x + c_in_x_indx) - *(v + c_in_x_indx) * tdt	\
 		   - 0.5 * *(a + c_in_x_indx) * tdt * tdt,
@@ -590,15 +538,16 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
 		   *(tcollt_left+newctindx)-*next_tcoll_tm);
 	    printf("\033[1m\033[30m" " NEGATIVE LEFT COLLISION TIME \n" "\033[0m");
 	    fflush(stdout);
+	  */
 	    if ( *(tcollt_left+newctindx)-*next_tcoll_tm > -1e-12 ) {
 	      *(tcollt_left+newctindx)= *next_tcoll_tm;
 	      *(xt + c_in_xt_indx)= *(x + c_in_x_indx) \
 		+ *(v + c_in_x_indx) * tdt		\
 		+ 0.5 * *(a + c_in_x_indx) * tdt * tdt;
 	    }
-	    else {
+	    else {// LCOV_EXCL_START
 	      abort();
-	    }
+	    }// LCOV_EXCL_STOP
 	}
 	*(bst_tcollt_left+cindx_tp+(int)tp_left)=			\
 	  bst_forceInsert(*(bst_tcollt_left+cindx_tp+(int)tp_left),
@@ -618,8 +567,6 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   }
   clock_t time_end= clock();
   *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
-  //printf("Next %f\n",*next_tcoll-dt);
-  //fflush(stdout);
   // Update all to next snapshot
 #pragma omp parallel for schedule(static,chunk) private(ii,tdt,dv)
   for (ii=0; ii < N; ii++) {
@@ -633,13 +580,8 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
     *(tcoll+ii)-= dt;
   }
   *next_tcoll-= dt;
-  if ( M > 0 ) {
-    if ( _PRINT_ALL_DIAGNOSTICS ) {
-      for (ii=0; ii < N; ii++)
-	printf("ntp_left %i: %i\n",ii,*(ntp_left+ii));
-      fflush(stdout);
-    }
 
+  if ( M > 0 ) {
 #pragma omp parallel for schedule(static,chunk) private(ii,jj,tmpd,tmpN,tdt,dv,c_in_xt_indx)
     for (ii=0; ii < N+1; ii++) {
       if ( ii == N ) {
@@ -659,17 +601,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
       for (jj=0; jj < tmpN; jj++) {
 	c_in_xt_indx= *(stindx + tmpi + jj );
 	tdt= dt - *(ttp + c_in_xt_indx);
-	if ( _PRINT_DIAGNOSTICS ) {
-	  printf("da %i,%i: %g, dt: %g, x: %g, v: %g\n",ii,jj,tmpd,tdt,
-		 *(xt + c_in_xt_indx),*(vt + c_in_xt_indx));
-	  fflush(stdout);
-	}
 	dv= tmpd * tdt;
 	*(xt + c_in_xt_indx)+= dv * tdt / 2. + *(vt + c_in_xt_indx) * tdt;
 	*(vt + c_in_xt_indx)+= dv;
       }
     }
-  }
+}
   free(t);
   bst_destroy(bst_tcoll);
   if ( M > 0 ) {
