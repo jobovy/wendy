@@ -1,8 +1,12 @@
+dist: xenial
 sudo: false
 language: python
 python:
   - "2.7"
-  - "3.5"
+  - "3.7"
+env:
+  global:
+    - PYTHON_COVREPORTS_VERSION=3.7 # Version for which reports are uploaded
 before_install:
  # Install lcov
  - wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
@@ -11,7 +15,7 @@ before_install:
  - export PATH=$HOME/usr/bin:$PATH
  - make -C lcov-1.11/ install PREFIX=$HOME
  #Setup conda for faster installs
- - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+ - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
  - bash miniconda.sh -b -p $HOME/miniconda
  - export PATH="$HOME/miniconda/bin:$PATH"
  - hash -r
@@ -31,9 +35,12 @@ script:
  - pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
 after_success:
  # Generate lcov output 
- - lcov --capture --base-directory . --directory build/temp.linux-x86_64-2.7/wendy/ --no-external --output-file coverage_full.info
- # Codecov
- - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then bash <(curl -s https://codecov.io/bash); fi
+ - lcov --capture --base-directory . --directory build/temp.linux-x86_64-$PYTHON_COVREPORTS_VERSION/wendy/ --no-external --output-file coverage_full.info
+ # Codecov, need to edit bash uploader for incorrect TRAVIS_PYTHON_VERSION environment variable matching, at least until codecov/codecov-bash#133 is resolved
+ - curl -s https://codecov.io/bash > .codecov
+ - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
+ - chmod +x .codecov
+ - if [[ $TRAVIS_PYTHON_VERSION == $PYTHON_COVREPORTS_VERSION ]]; then ./.codecov -X gcov; fi
 notifications:
   email:
     recipients:
