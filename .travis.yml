@@ -40,7 +40,7 @@ after_success:
  - curl -s https://codecov.io/bash > .codecov
  - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
  - chmod +x .codecov
- - if [[ $TRAVIS_PYTHON_VERSION == $PYTHON_COVREPORTS_VERSION ]]; then ./.codecov; fi
+ - if [[ $TRAVIS_PYTHON_VERSION == $PYTHON_COVREPORTS_VERSION ]]; then ./.codecov -X gcov; fi
 notifications:
   email:
     recipients:
