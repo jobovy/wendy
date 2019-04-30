@@ -95,7 +95,7 @@ _wendy_solve_coll_harm_func= _lib._solve_coll_harm
 _wendy_solve_coll_harm_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
 _wendy_solve_coll_harm_func.restype= ctypes.c_double
-_sort_type_dict= {'quick': 0,'merge': 1}
+_sort_type_dict= {'quick': 0,'merge': 1,'tim':2}
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
     def __init__(self,coeff):
@@ -122,7 +122,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,sort='quick',
        omega= (None) if set, frequency of external harmonic oscillator
        approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
        nleap= (None) when approx == True, number of leapfrog steps for each dt
-       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort)
+       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort, 'tim' for timsort)
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
@@ -330,7 +330,7 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,sort='quick',
        dt - output time step
        nleap - number of leapfrog steps / output time step
        omega= (None) if set, frequency of external harmonic oscillator
-       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort)
+       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort, 'tim' for timsort)
        twopiG= (1.) value of 2 \pi G
        full_output= (False) if True, also yield diagnostic information: (a) time elapsed for integrating this timestep (*not* cumulative)
     OUTPUT:

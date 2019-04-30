@@ -7,6 +7,13 @@
 #include <time.h>
 #include <wendy.h>
 #include <bst.h>
+
+// functionality to perform argsort in approximate solver
+#define SORT_NAME argsort
+#define SORT_TYPE struct array_w_index
+#define SORT_CMP(x,y) ( ( ((x).val) < ((y).val) ) ? -1: ( ( ((x).val) > ((y).val) ) ? 1: 0 ) )
+#include <sort.h>
+
 double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
   double mba;
@@ -314,13 +321,6 @@ void leapfrog_leappq(int N, struct array_w_index * xi,
     (xi+ii)->val+= dt_drift * *(v + (xi+ii)->idx);
   }
 }
-int argsort_compare_function(const void *a,const void *b) {
-  struct array_w_index *x = (struct array_w_index *) a;
-  struct array_w_index *y = (struct array_w_index *) b;
-  if (x->val < y->val) return -1;
-  else if (x->val > y->val) return 1; 
-  else return 0;
-}
 void _nbody_force(int N, int sort_type,
 		  struct array_w_index * xi, double * m, double * a,
 		  double omega2, double * cumulmass,double * revcumulmass){
@@ -328,10 +328,13 @@ void _nbody_force(int N, int sort_type,
   // argsort
   switch ( sort_type ) {
   case 0:
-    qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    argsort_quick_sort(xi,N);
     break;
   case 1:
-    mergesort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    argsort_merge_sort(xi,N);
+    break;
+  case 2:
+    argsort_tim_sort(xi,N);
     break;
   }
   // Compute cumulative mass
