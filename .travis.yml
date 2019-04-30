@@ -35,7 +35,7 @@ script:
  - pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
 after_success:
  # Generate lcov output 
- - lcov --capture --base-directory . --directory build/temp.linux-x86_64-2.7/wendy/ --no-external --output-file coverage_full.info
+ - lcov --capture --base-directory . --directory build/temp.linux-x86_64-3.7/wendy/ --no-external --output-file coverage_full.info
  # Codecov, need to edit bash uploader for incorrect TRAVIS_PYTHON_VERSION environment variable matching, at least until codecov/codecov-bash#133 is resolved
  - curl -s https://codecov.io/bash > .codecov
  - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
