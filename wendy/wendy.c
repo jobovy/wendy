@@ -321,11 +321,19 @@ int argsort_compare_function(const void *a,const void *b) {
   else if (x->val > y->val) return 1; 
   else return 0;
 }
-void _nbody_force(int N, struct array_w_index * xi, double * m, double * a,
+void _nbody_force(int N, int sort_type,
+		  struct array_w_index * xi, double * m, double * a,
 		  double omega2, double * cumulmass,double * revcumulmass){
   int ii;
   // argsort
-  qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+  switch ( sort_type ) {
+  case 0:
+    qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
+  case 1:
+    mergesort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
+  }
   // Compute cumulative mass
   for (ii=0; ii< N-1; ii++)
     *(cumulmass+ii+1)= *(cumulmass+ii) + *(m+(xi+ii)->idx); 
@@ -344,6 +352,7 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
 				 double * x, double * v, 
 				 double * m, double * a,
 				 double dt, int nleap, double omega2,
+				 int sort_type,
 				 int * err,double * time_elapsed,
 				 double * cumulmass, double * revcumulmass){
   int ii;
@@ -353,11 +362,11 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
   //now drift full for a while
   for (ii=0; ii < (nleap-1); ii++){
     //kick+drift
-    _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
+    _nbody_force(N,sort_type,xi,m,a,omega2,cumulmass,revcumulmass);
     leapfrog_leappq(N,xi,v,dt,dt,a);
   }
   //end with one last kick and drift
-  _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
+  _nbody_force(N,sort_type,xi,m,a,omega2,cumulmass,revcumulmass);
   leapfrog_leappq(N,xi,v,dt,dt/2.,a);
   //de-sort
   for (ii=0; ii< N; ii++)
