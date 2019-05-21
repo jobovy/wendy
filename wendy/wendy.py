@@ -122,7 +122,12 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,sort='quick',
        omega= (None) if set, frequency of external harmonic oscillator
        approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
        nleap= (None) when approx == True, number of leapfrog steps for each dt
-       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort, 'tim' for timsort)
+       sort= ('quick') type of sort to use when approx == True:
+          * 'quick' for quicksort (typically fastest serial algorithm)
+          * 'merge' for mergesort
+          * 'tim' for timsort
+          * 'qsort' for C's stdlib standard qsort
+          * 'parallel' for a parallelized algorithm)
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
@@ -133,6 +138,7 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,sort='quick',
        2017-04-24 - Written - Bovy (UofT/CCA)
        2017-05-23 - Added omega - Bovy (UofT/CCA)
        2019-04-29 - Add 'sort' option - Bovy (UofT)
+       2019-05-20 - Added parallel sort option - Bovy (UofT)
     """
     if approx: # return approximate solver
         if nleap is None:
