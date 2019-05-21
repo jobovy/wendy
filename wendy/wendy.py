@@ -354,7 +354,6 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,sort='quick',
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
     cumulmass= numpy.zeros(len(x))
-    revcumulmass= numpy.zeros(len(x))
     err= ctypes.c_int(0)
     #Array requirements
     x= numpy.require(x,dtype=numpy.float64,requirements=['C','W'])
