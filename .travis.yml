@@ -28,10 +28,11 @@ install:
  - pip install 'coverage==4.1' --force-reinstall # necessary bc of backward incompatible change in 4.2 about combining reports
  - pip install pytest-cov
  - easy_install --upgrade requests
+# For tests, only fall back onto serial algorithm in parallel sort for v. small
+ - export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10"
  - python setup.py build_ext --coverage --inplace
  - python setup.py develop
 script:
-# only wait longer for orbit integrations
  - pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
 after_success:
  # Generate lcov output 
