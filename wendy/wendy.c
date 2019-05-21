@@ -7,12 +7,28 @@
 #include <time.h>
 #include <wendy.h>
 #include <bst.h>
+#include <parallel_sort.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_wtime() (clock()*1./CLOCKS_PER_SEC)
+#endif
 
 // functionality to perform argsort in approximate solver
 #define SORT_NAME argsort
 #define SORT_TYPE struct array_w_index
 #define SORT_CMP(x,y) ( ( ((x).val) < ((y).val) ) ? -1: ( ( ((x).val) > ((y).val) ) ? 1: 0 ) )
 #include <sort.h>
+
+// For parallel_sort, need standard (qsort-like) comparison function
+int argsort_compare_function(const void *a,const void *b) {
+  struct array_w_index *x = (struct array_w_index *) a;
+  struct array_w_index *y = (struct array_w_index *) b;
+  if (x->val < y->val) return -1;
+  else if (x->val > y->val) return 1; 
+  else return 0;
+}
 
 double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
@@ -336,6 +352,12 @@ void _nbody_force(int N, int sort_type,
   case 2:
     argsort_tim_sort(xi,N);
     break;
+  case 3:
+    qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
+  case 4:
+    parallel_sort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
   }
   // Compute cumulative mass
   for (ii=0; ii< N-1; ii++)
@@ -359,7 +381,8 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
 				 int * err,double * time_elapsed,
 				 double * cumulmass, double * revcumulmass){
   int ii;
-  clock_t time_begin= clock();
+  double time_begin, time_end;
+  time_begin= omp_get_wtime();
   //drift half
   leapfrog_leapq(N,xi,v,dt/2.);
   //now drift full for a while
@@ -374,6 +397,6 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
   //de-sort
   for (ii=0; ii< N; ii++)
     *(x+(xi+ii)->idx)= (xi+ii)->val;
-  clock_t time_end= clock();
-  *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
+  time_end= omp_get_wtime();
+  *time_elapsed= time_end-time_begin;
 }

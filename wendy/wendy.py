@@ -95,7 +95,7 @@ _wendy_solve_coll_harm_func= _lib._solve_coll_harm
 _wendy_solve_coll_harm_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
 _wendy_solve_coll_harm_func.restype= ctypes.c_double
-_sort_type_dict= {'quick': 0,'merge': 1,'tim':2}
+_sort_type_dict= {'quick': 0,'merge': 1,'tim':2,'qsort':3,'parallel':4}
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
     def __init__(self,coeff):
