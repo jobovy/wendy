@@ -317,6 +317,7 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
 // Approximate solution using leapfrog integration w/ exact forces
 void leapfrog_leapq(int N, struct array_w_index *xi,double *v,double dt){
   int ii;
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii < N; ii++)
     (xi+ii)->val+= dt * *(v + (xi+ii)->idx);
 }
@@ -324,6 +325,7 @@ void leapfrog_leappq(int N, struct array_w_index * xi,
 		     double *v,double dt_kick,double dt_drift,
 		     double *a){
   int ii;
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii< N; ii++) {
     *(v + (xi+ii)->idx)+= dt_kick * *(a + (xi+ii)->idx);
     (xi+ii)->val+= dt_drift * *(v + (xi+ii)->idx);
@@ -331,7 +333,7 @@ void leapfrog_leappq(int N, struct array_w_index * xi,
 }
 void _nbody_force(int N, int sort_type,
 		  struct array_w_index * xi, double * m, double * a,
-		  double omega2, double * cumulmass,double * revcumulmass){
+		  double totmass, double omega2, double * cumulmass){
   int ii;
   // argsort
   switch ( sort_type ) {
@@ -351,27 +353,26 @@ void _nbody_force(int N, int sort_type,
     parallel_sort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
     break;
   }
-  // Compute cumulative mass
+  // Compute cumulative mass and acceleration
   for (ii=0; ii< N-1; ii++)
     *(cumulmass+ii+1)= *(cumulmass+ii) + *(m+(xi+ii)->idx); 
-  // Now compute acceleration from reverse-cumulative mass
-  for (ii=0; ii< N-1; ii++)
-    *(revcumulmass+N-ii-2)= *(revcumulmass+N-ii-1) + *(m+(xi+N-ii-1)->idx);
   if ( omega2 < 0 )
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii);
+      *(a + (xi+ii)->idx)= totmass - 2 * *(cumulmass+ii) - *(m+(xi+ii)->idx);
   else
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii) \
-	- omega2 * (xi+ii)->val;
+      *(a + (xi+ii)->idx)= totmass - 2 * *(cumulmass+ii) \
+	- *(m+(xi+ii)->idx) - omega2 * (xi+ii)->val;
 }
 void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi, 
 				 double * x, double * v, 
-				 double * m, double * a,
+				 double * m, double * a, double totmass,
 				 double dt, int nleap, double omega2,
 				 int sort_type,
 				 int * err,double * time_elapsed,
-				 double * cumulmass, double * revcumulmass){
+				 double * cumulmass){
   int ii;
   double time_begin, time_end;
   time_begin= omp_get_wtime();
@@ -380,13 +381,14 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
   //now drift full for a while
   for (ii=0; ii < (nleap-1); ii++){
     //kick+drift
-    _nbody_force(N,sort_type,xi,m,a,omega2,cumulmass,revcumulmass);
+    _nbody_force(N,sort_type,xi,m,a,totmass,omega2,cumulmass);
     leapfrog_leappq(N,xi,v,dt,dt,a);
   }
   //end with one last kick and drift
-  _nbody_force(N,sort_type,xi,m,a,omega2,cumulmass,revcumulmass);
+  _nbody_force(N,sort_type,xi,m,a,totmass,omega2,cumulmass);
   leapfrog_leappq(N,xi,v,dt,dt/2.,a);
   //de-sort
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii< N; ii++)
     *(x+(xi+ii)->idx)= (xi+ii)->val;
   time_end= omp_get_wtime();

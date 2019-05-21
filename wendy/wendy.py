@@ -80,12 +80,12 @@ _wendy_nbody_approx_onestep_func.argtypes=\
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ctypes.c_double,
+     ctypes.c_double,
      ctypes.c_int,
      ctypes.c_double,
      ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_double),
-     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags)]
 _wendy_solve_coll_quad_func= _lib._solve_coll_quad
 _wendy_solve_coll_quad_func.argtypes=\
@@ -358,8 +358,7 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,sort='quick',
     m= numpy.require(m,dtype=numpy.float64,requirements=['C','W'])
     cumulmass= numpy.require(cumulmass,
                              dtype=numpy.float64,requirements=['C','W'])
-    revcumulmass= numpy.require(revcumulmass,
-                                dtype=numpy.float64,requirements=['C','W'])
+    totmass= numpy.sum(m)
     xi= (array_w_index * len(x))()
     for ii in range(len(x)):
         xi[ii].idx= ctypes.c_int(ii)
@@ -369,11 +368,11 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,sort='quick',
     time_elapsed= ctypes.c_double(0)
     while True:
         _wendy_nbody_approx_onestep_func(len(x),ctypes.pointer(xi[0]),
-                                         x,v,m,a,dt_leap,nleap,omega2,
+                                         x,v,m,a,totmass,dt_leap,nleap,omega2,
                                          _sort_type_dict[sort],
                                          ctypes.byref(err),
                                          ctypes.byref(time_elapsed),
-                                         cumulmass,revcumulmass)
+                                         cumulmass)
         if full_output:
             yield(x,v,time_elapsed.value)
         else:
