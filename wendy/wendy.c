@@ -61,12 +61,10 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   double dv,tdt, dm, tmpd;
   struct node* minNode;
   double * t= (double *) malloc ( N * sizeof(double) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
   cnt_coll= 0;
   // Build binary search tree for keeping track of collision times
   int * idx= (int *) malloc ( (N-1) * sizeof(int) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) *(idx+ii)= ii;
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
@@ -149,14 +147,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot
-#pragma omp parallel for schedule(static,chunk) private(ii,tdt,dv)
   for (ii=0; ii < N; ii++) {
     tdt= dt - *(t+ii);
     dv= *(a+ii) * tdt;
     *(x+ii)+= dv * tdt / 2. + *(v+ii) * tdt;
     *(v+ii)+= dv;
   }
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) {
     *(tcoll+ii)-= dt;
   }
@@ -180,12 +176,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
   double tdt, dm, tmpd, cosot, sinot;
   struct node* minNode;
   double * t= (double *) malloc ( N * sizeof(double) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
   cnt_coll= 0;
   // Build binary search tree for keeping track of collision times
   int * idx= (int *) malloc ( (N-1) * sizeof(int) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) *(idx+ii)= ii;
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
@@ -301,7 +295,6 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot
-#pragma omp parallel for schedule(static,chunk) private(ii,tdt,dv,cosot,sinot,tmpd)
   for (ii=0; ii < N; ii++) {
     tdt= dt - *(t+ii);
     sinot = sin( omega * tdt );
@@ -310,7 +303,6 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     *(x+ii)= tmpd * cosot + *(v+ii) / omega * sinot + *(a+ii);
     *(v+ii)= -tmpd * omega * sinot + *(v+ii) * cosot;
   }
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) {
     *(tcoll+ii)-= dt;
   }
