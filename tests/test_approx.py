@@ -126,6 +126,28 @@ def test_energy_conservation_sech2disk_manyparticles_parallel():
         cnt+= 1
     return None
 
+def test_energy_conservation_sech2disk_notsomanyparticles_parallel():
+    # Test that energy is conserved for a self-gravitating disk, using parallel_sort
+    # half the number of particles, so the serial version of the algorithm is
+    # reached at a different level to test the dst --> src and src --> dst
+    # versions of the parallel algorithm
+    N= 51
+    totmass= 1.
+    sigma= 1.
+    zh= 2.*sigma**2./totmass
+    x= numpy.arctanh(2.*numpy.random.uniform(size=N)-1)*zh
+    v= numpy.random.normal(size=N)*sigma
+    v-= numpy.mean(v) # stabilize
+    m= numpy.ones_like(x)/N*(1.+0.1*(2.*numpy.random.uniform(size=N)-1))
+    g= wendy.nbody(x,v,m,0.05,approx=True,nleap=1000,sort='parallel')
+    E= wendy.energy(x,v,m)
+    cnt= 0
+    while cnt < 100:
+        tx,tv= next(g)
+        assert numpy.fabs(wendy.energy(tx,tv,m)-E)/E < 10.**-6., "Energy not conserved during approximate N-body integration"
+        cnt+= 1
+    return None
+
 def test_momentum_conservation_unequalmasses():
     # Test that momentum is conserved for a simple problem
     x= numpy.array([-1.1,0.1,1.3])
