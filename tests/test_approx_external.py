@@ -19,19 +19,25 @@ def test_energy_conservation():
         cnt+= 1
     return None
 
-def test_energy_conservation_unequalmasses():
+def test_energy_conservation_unequalmasses_wforceclass():
     # Test that energy is conserved for a simple problem
     x= numpy.array([-1.1,0.1,1.3])
     v= numpy.array([3.,2.,-5.])
     m= numpy.array([1.,2.,3.])
     omega= 1.1
-    ext_force= lambda x,t: -omega**2.*x
-    g= wendy.nbody(x,v,m,0.05,ext_force=ext_force,approx=True,nleap=100000)
+    # Harmonic oscillator force as a class, which numba can't handle
+    class Eforce(object):
+        def __init__(self,omega):
+            self._omega2= omega**2.
+        def __call__(self,x,t):
+            return -self._omega2*x
+    ext_force= Eforce(omega)
+    g= wendy.nbody(x,v,m,0.05,ext_force=ext_force,approx=True,nleap=10000)
     E= wendy.energy(x,v,m,omega=omega)
     cnt= 0
     while cnt < 100:
         tx,tv= next(g)
-        assert numpy.fabs(wendy.energy(tx,tv,m,omega=omega)-E)/E < 10.**-6., "Energy not conserved during approximate N-body integration with external harmonic potential"
+        assert numpy.fabs(wendy.energy(tx,tv,m,omega=omega)-E)/E < 10.**-5., "Energy not conserved during approximate N-body integration with external harmonic potential"
         cnt+= 1
     return None
 
