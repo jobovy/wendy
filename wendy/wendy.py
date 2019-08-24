@@ -394,7 +394,8 @@ def _nbody_approx(x,v,m,dt,nleap,t0=0.,omega=None,ext_force=None,sort='quick',
                                 types.CPointer(types.double))
             ext_force_4c= cfunc(types.double(types.double,types.double),
                                 nopython=True)(ext_force).ctypes
-            def ext_force_arrays(N,x,t,a):
+            def ext_force_arrays(N,x,t,a): # pragma: no cover
+                # no cover, bc cannot be directly accessed (compiled into bytecode)
                 if N == 1: # 1 point, return value
                     return ext_force_4c(x[0],t)
                 for ii in range(N): # multiple points, store in a
@@ -410,8 +411,6 @@ def _nbody_approx(x,v,m,dt,nleap,t0=0.,omega=None,ext_force=None,sort='quick',
             def ext_force_arrays(N,x,t,a):
                 if N == 1:
                     return ext_force(x.contents.value,t)
-                #for ii in range(N): # multiple points, store in a
-                #    a[ii]= ext_force(x[ii],t)
                 x= as_array(x,shape=(N,))
                 a= as_array(a,shape=(N,))
                 a[:]= ext_force(x,t)
