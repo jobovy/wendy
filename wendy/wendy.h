@@ -6,6 +6,9 @@
 #ifndef CHUNK_PARALLEL_LEAPFROG
 #define CHUNK_PARALLEL_LEAPFROG 1000
 #endif
+#ifndef EXTERNAL_SWITCH
+#define EXTERNAL_SWITCH 10
+#endif
 struct array_w_index
 {
   int idx;
@@ -25,6 +28,8 @@ void _wendy_nbody_harm_onestep(int, double *, double *, double *,
 			       int,int *,int *,double *,double);
 void _wendy_nbody_approx_onestep(int,struct array_w_index *, double *, 
 				 double *,double *, double *,double,
-				 double, int,double,int,int *,double *,
+				 double, int,double *,double,
+				 double (*ext_force)(int,double *,double,double *),
+				 int,int *,double *,
 				 double *);
 #endif /* wendy.h */

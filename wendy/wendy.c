@@ -332,8 +332,10 @@ void leapfrog_leappq(int N, struct array_w_index * xi,
   }
 }
 void _nbody_force(int N, int sort_type,
-		  struct array_w_index * xi, double * m, double * a,
-		  double totmass, double omega2, double * cumulmass){
+		  struct array_w_index * xi, double * x,double * m, double * a,
+		  double t, double totmass, double omega2,
+		  double (*ext_force)(int N,double *x, double t, double *a),
+		  double * cumulmass){
   int ii;
   // argsort
   switch ( sort_type ) {
@@ -356,20 +358,36 @@ void _nbody_force(int N, int sort_type,
   // Compute cumulative mass and acceleration
   for (ii=0; ii< N-1; ii++)
     *(cumulmass+ii+1)= *(cumulmass+ii) + *(m+(xi+ii)->idx); 
-  if ( omega2 < 0 )
-    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
+  // Evaluate external force
+  if ( ext_force && N > EXTERNAL_SWITCH ) {
+    // Need to de-sort to pass x to ext_force's array calculation
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= totmass - 2 * *(cumulmass+ii) - *(m+(xi+ii)->idx);
+      *(x+(xi+ii)->idx)= (xi+ii)->val;
+    ext_force(N,x,t,a);
+  } else if ( ext_force ) // for < EXTERNAL_SWITCH, use sequential evaluation
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)= ext_force(1,&(xi+ii)->val,t,NULL);
   else
     #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= totmass - 2 * *(cumulmass+ii) \
+      *(a+ii)= 0.;
+  if ( omega2 < 0 )
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)+= totmass - 2 * *(cumulmass+ii) - *(m+(xi+ii)->idx);
+  else
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)+= totmass - 2 * *(cumulmass+ii) \
 	- *(m+(xi+ii)->idx) - omega2 * (xi+ii)->val;
 }
 void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi, 
 				 double * x, double * v, 
 				 double * m, double * a, double totmass,
-				 double dt, int nleap, double omega2,
+				 double dt, int nleap, double * t0,
+				 double omega2,
+				 double (*ext_force)(int,double *x, double t,double *a),
 				 int sort_type,
 				 int * err,double * time_elapsed,
 				 double * cumulmass){
@@ -381,11 +399,15 @@ void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi,
   //now drift full for a while
   for (ii=0; ii < (nleap-1); ii++){
     //kick+drift
-    _nbody_force(N,sort_type,xi,m,a,totmass,omega2,cumulmass);
+    _nbody_force(N,sort_type,xi,x,m,a,*t0,totmass,omega2,*ext_force,cumulmass);
+    if ( ext_force )
+      *t0+= dt;
     leapfrog_leappq(N,xi,v,dt,dt,a);
   }
   //end with one last kick and drift
-  _nbody_force(N,sort_type,xi,m,a,totmass,omega2,cumulmass);
+  _nbody_force(N,sort_type,xi,x,m,a,*t0,totmass,omega2,*ext_force,cumulmass);
+  if ( ext_force )
+    *t0+= dt;
   leapfrog_leappq(N,xi,v,dt,dt/2.,a);
   //de-sort
   #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
