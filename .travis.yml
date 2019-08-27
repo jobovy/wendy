@@ -29,7 +29,7 @@ install:
  - pip install pytest-cov
  - easy_install --upgrade requests
 # For tests, only fall back onto serial algorithm in parallel sort for v. small
- - export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10"
+ - export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
  - python setup.py build_ext --coverage --inplace
  - python setup.py develop
 script:
