@@ -6,7 +6,8 @@ MAINTAINER Jo Bovy
 USER main
 RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
 USER root
-RUN FFMPEG_DIR=$(tar -ztf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && tar xvfJ ffmpeg-git-amd64-static.tar.xz && ln $FFMPEG_DIR/ffmpeg /usr/local/bin/ffmpeg
+RUN FFMPEG_DIR=$(tar -ztf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && echo $FFMPEG_DIR
+RUN FFMPEG_DIR=$(tar -ztf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && tar xvf ffmpeg-git-amd64-static.tar.xz && ln $FFMPEG_DIR/ffmpeg /usr/local/bin/ffmpeg
 
 USER main
 
