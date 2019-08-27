@@ -24,7 +24,7 @@ USER root
 # Fix permissions
 RUN chown 1000:1000 -R /opt/conda
 # Install gcc and build tools
-RUN apt-get install build-essential
+RUN apt-get -y install build-essential
 
 USER ${NB_UID}
 
