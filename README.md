@@ -44,7 +44,7 @@ next_x, next_v= next(g) # at t=0.05
 next_x, next_v= next(g) # at t=0.10
 ...
 ```
-The generator initialization with ``wendy.nbody`` has options to (a) solve the problem exactly or not using ``approx=``, (b) include an external harmonic oscillator potential ``omega^2 x^2 / 2`` with ``omega=`` (both for exact and approximate solutions), and (c) include an arbitrary external force ``F(x,t)`` (using ``ext_force=``).
+The generator initialization with ``wendy.nbody`` has options to (a) solve the problem exactly or not using ``approx=``, (b) include an external harmonic oscillator potential ``omega^2 x^2 / 2`` with ``omega=`` (both for exact and approximate solutions), and (c) include an arbitrary external force ``F(x,t)`` (using ``ext_force=``, only for the approximate solution).
 
 ## Examples
 
