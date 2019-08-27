@@ -10,6 +10,9 @@
 #ifndef PARALLEL_SERIAL_MERGE_SWITCH
 #define PARALLEL_SERIAL_MERGE_SWITCH 50000
 #endif
+#ifndef PARALLEL_SORT_NUM_THREADS
+#define PARALLEL_SORT_NUM_THREADS 32
+#endif
 // Functions
 void parallel_sort(void *,size_t,size_t,
 		   int (*)(const void *, const void *));

@@ -129,7 +129,7 @@ void parallel_sort(void *base, size_t nmemb, size_t size,
 		   int (*compar ) (const void *, const void * )){
   void* aux= malloc( nmemb * size );
   memcpy(aux,base,nmemb*size);
-  #pragma omp parallel
+#pragma omp parallel num_threads(PARALLEL_SORT_NUM_THREADS)
   #pragma omp single
   parallel_mergesort(aux,base,nmemb,size,compar,true);
   free(aux);
