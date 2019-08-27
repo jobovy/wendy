@@ -4,10 +4,9 @@ MAINTAINER Jo Bovy
 
 # Add ffmpeg dependency for notebook movies
 USER main
-RUN wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
-RUN tar xvfJ ffmpeg-release-64bit-static.tar.xz
+RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
 USER root
-RUN ln ffmpeg-3.3.2-64bit-static/ffmpeg /usr/local/bin/ffmpeg
+RUN tar ffmpeg-git-amd64-static.tar.xz && FFMPEG_DIR=$(tar -ztf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && ln $FFMPEG_DIR/ffmpeg /usr/local/bin/ffmpeg
 
 USER main
 
