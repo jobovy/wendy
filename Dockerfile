@@ -20,6 +20,9 @@ RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz 
 USER root
 RUN FFMPEG_DIR=$(tar -tJf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && tar xvJf ffmpeg-git-amd64-static.tar.xz && ln $FFMPEG_DIR/ffmpeg /usr/local/bin/ffmpeg
 
+USER root
+RUN sudo chown 1000:1000 -R /opt/conda
+
 USER ${NB_UID}
 
 ADD requirements.txt requirements.txt
