@@ -2,6 +2,18 @@ FROM continuumio/miniconda3
 
 MAINTAINER Jo Bovy
 
+### create user with a home directory
+ARG NB_USER
+ARG NB_UID
+ENV USER ${NB_USER}
+ENV HOME /home/${NB_USER}
+
+RUN adduser --disabled-password \
+    --gecos "Default user" \
+    --uid ${NB_UID} \
+    ${NB_USER}
+WORKDIR ${HOME}
+
 # Add ffmpeg dependency for notebook movies
 USER main
 RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz -O ffmpeg-git-amd64-static.tar.xz
