@@ -14,14 +14,8 @@ RUN adduser --disabled-password \
     ${NB_USER}
 WORKDIR ${HOME}
 
-# Make sure the contents of our repo are in ${HOME}
-COPY . ${HOME}
-USER root
-RUN chown -R ${NB_UID} ${HOME}
-USER ${NB_USER}
-
 # Add ffmpeg dependency for notebook movies
-USER ${NB_UID}
+USER ${NB_USER}
 RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz -O ffmpeg-git-amd64-static.tar.xz
 USER root
 RUN FFMPEG_DIR=$(tar -tJf ffmpeg-git-amd64-static.tar.xz | egrep '^[^/]+/?$') && tar xvJf ffmpeg-git-amd64-static.tar.xz && ln $FFMPEG_DIR/ffmpeg /usr/local/bin/ffmpeg
@@ -31,9 +25,11 @@ USER root
 RUN chown 1000:1000 -R /opt/conda
 # Install gcc and build tools
 RUN apt-get -y install build-essential
+# Make sure the contents of our repo are in ${HOME}
+COPY . ${HOME}
+RUN chown -R ${NB_UID} ${HOME}
 
-
-USER ${NB_UID}
+USER ${NB_USER}
 
 ADD requirements.txt requirements.txt
 RUN conda install pip
