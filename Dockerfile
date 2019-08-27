@@ -30,5 +30,6 @@ USER ${NB_UID}
 
 ADD requirements.txt requirements.txt
 RUN conda install pip
+RUN pip install --no-cache notebook
 RUN pip install -r requirements.txt
 RUN pip install -U --no-deps git+git://github.com/jobovy/wendy.git#egg=wendy
