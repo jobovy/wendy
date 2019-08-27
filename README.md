@@ -58,6 +58,10 @@ You can run these *without* installing ``wendy`` by clicking on [![Binder](http:
 
 <img src="https://user-images.githubusercontent.com/1044876/26942002-7dce9644-4c4e-11e7-90d0-43beddfd0dd9.gif" width="400"><img src="https://cloud.githubusercontent.com/assets/1044876/26089414/850dd7a2-39cb-11e7-9beb-73dbce2c6c4b.gif" width="400">
 
+* The _Gaia_ phase-space spiral: [example notebook](examples/GaiaPhaseSpaceSpiral.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/GaiaPhaseSpaceSpiral.ipynb?flush_cache=true))
+
+<img src="https://user-images.githubusercontent.com/1044876/63739608-d5705a00-c85b-11e9-9e75-fbe106294331.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/63739620-e28d4900-c85b-11e9-88d9-ee284bd7ad83.gif" width="400">
+
 * Adiabatic contraction: [example notebook](examples/AdiabaticContraction.ipynb) (run locally to see movies, or view on [nbviewer](http://nbviewer.jupyter.org/github/jobovy/wendy/blob/master/examples/AdiabaticContraction.ipynb?flush_cache=true))
 
 <img src="https://user-images.githubusercontent.com/1044876/26941638-2b4eed8e-4c4d-11e7-9804-a63b681b86e6.gif" width="400"><img src="https://user-images.githubusercontent.com/1044876/26941809-d7393b22-4c4d-11e7-97dd-cd3b259aefa7.gif" width="400">
