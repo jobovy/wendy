@@ -29,6 +29,12 @@ or locally using
 python setup.py install --user
 ```
 
+The behavior of the parallel sorting algorithm used when setting ``sort='parallel'`` in the approximate version of the N-body code (``approx=True``) is controlled by a few compilation-time variables: ``PARALLEL_SERIAL_SORT_SWITCH``, which sets the length of an array below which the serial sort is used, ``PARALLEL_SERIAL_MERGE_SWITCH``, which sets the length of an array below which a serial merge is used (as part of the ``mergesort`` sorting algorithm used), and ``PARALLEL_SORT_NUM_THREADS``, the number of threads used in the parallel sorting algorithm. By default, these are set to ``PARALLEL_SERIAL_MERGE_SWITCH=10000``, ``PARALLEL_SERIAL_MERGE_SWITCH=50000``, and ``PARALLEL_SORT_NUM_THREADS=32``, which appear to work well. Significant speed-ups can be obtained by optimizing these for your system and specific problem. They can be set to different values by running, e.g.,
+```
+export CFLAGS="$CFLAGS -D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
+```
+before compiling the code (if you are trying to change them, make sure to force a re-compilation by removing the ``build/`` directory).
+
 ## Usage
 
 Use ``wendy.nbody`` to initialize a generator object for initial *(x,v)* with masses *m*. The generator then returns the state of the system at equally-spaced time intervals:
