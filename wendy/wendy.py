@@ -4,10 +4,12 @@ import sys
 import sysconfig
 import warnings
 import ctypes
+c_double_p= ctypes.POINTER(ctypes.c_double)
 import ctypes.util
 import copy
 import numpy
-from numpy.ctypeslib import ndpointer
+from numpy.ctypeslib import ndpointer, as_array
+from numba import types, cfunc
 #Find and load the library
 _lib= None
 outerr= None
@@ -80,11 +82,14 @@ _wendy_nbody_approx_onestep_func.argtypes=\
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ctypes.c_double,
-     ctypes.c_int,
      ctypes.c_double,
+     ctypes.c_int,
+     ctypes.POINTER(ctypes.c_double),
+     ctypes.c_double,
+     ctypes.c_void_p,
+     ctypes.c_int,
      ctypes.POINTER(ctypes.c_int),
      ctypes.POINTER(ctypes.c_double),
-     ndpointer(dtype=numpy.float64,flags=ndarrayFlags),
      ndpointer(dtype=numpy.float64,flags=ndarrayFlags)]
 _wendy_solve_coll_quad_func= _lib._solve_coll_quad
 _wendy_solve_coll_quad_func.argtypes=\
@@ -94,7 +99,7 @@ _wendy_solve_coll_harm_func= _lib._solve_coll_harm
 _wendy_solve_coll_harm_func.argtypes=\
     [ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
 _wendy_solve_coll_harm_func.restype= ctypes.c_double
-
+_sort_type_dict= {'quick': 0,'merge': 1,'tim':2,'qsort':3,'parallel':4}
 class MyQuadPoly:
     """Simple quadratic polynomial class"""
     def __init__(self,coeff):
@@ -104,7 +109,8 @@ class MyQuadPoly:
         mba= -coeff[1]/coeff[2]
         return 0.5*(mba+numpy.sqrt(mba**2.-4.*coeff[0]/coeff[2]))
 
-def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
+def nbody(x,v,m,dt,t0=0.,twopiG=1.,omega=None,ext_force=None,
+          approx=False,nleap=None,sort='quick',
           maxcoll=100000,warn_maxcoll=False,
           full_output=False):
     """
@@ -117,10 +123,18 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
        v - velocities [N]
        m - masses [N]
        dt - time step
+       t0= (0.) initial time (only important when using a time-dependent, external force)
        twopiG= (1.) value of 2 \pi G
-       omega= (None) if set, frequency of external harmonic oscillator
+       omega= (None) if set, frequency of external harmonic oscillator: Phi(x) = omega^2 x^2/2
+       ext_force= (None) if set, a function F(x,t) that represents an external force as a function of position x and time t; only for approx=True
        approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
        nleap= (None) when approx == True, number of leapfrog steps for each dt
+       sort= ('quick') type of sort to use when approx == True:
+          * 'quick' for quicksort (typically fastest serial algorithm)
+          * 'merge' for mergesort
+          * 'tim' for timsort
+          * 'qsort' for C's stdlib standard qsort
+          * 'parallel' for a parallelized algorithm
        maxcoll= (100000) maximum number of collisions to allow in one time step
        warn_maxcoll= (False) if True, do not raise an error when the maximum number of collisions is exceeded, but instead raise a warning and continue after re-arranging the particles
        full_output= (False) if True, also yield diagnostic information: (a) total number of collisions processed up to this iteration (cumulative; only for exact algorithm), (b) time elapsed resolving collisions if approx is False and for integrating the system if approx is True in just this iteration  (*not* cumulative)
@@ -130,13 +144,19 @@ def nbody(x,v,m,dt,twopiG=1.,omega=None,approx=False,nleap=None,
     HISTORY:
        2017-04-24 - Written - Bovy (UofT/CCA)
        2017-05-23 - Added omega - Bovy (UofT/CCA)
+       2019-04-29 - Add 'sort' option - Bovy (UofT)
+       2019-05-20 - Added parallel sort option - Bovy (UofT)
+       2019-08-22 - Added ext_force option - Bovy (UofT)
     """
     if approx: # return approximate solver
         if nleap is None:
             raise ValueError('When approx is True, the number of leapfrog steps nleap= per output time step needs to be set')
-        for item in _nbody_approx(x,v,m,dt,nleap,omega=omega,
+        for item in _nbody_approx(x,v,m,dt,nleap,t0=t0,sort=sort,omega=omega,
+                                  ext_force=ext_force,
                                   twopiG=twopiG,full_output=full_output):
             yield item
+    # Check that no external force is set
+    if not ext_force is None: raise ValueError('External forces (ext_force=) are not supported for the exact nbody calculation')
     # Check omega inpput
     if not omega is None and omega*dt > numpy.pi/2.:
         raise ValueError('When omega is set, omega*dt needs to be less than pi/2; please adjust dt')
@@ -313,7 +333,8 @@ def nbody_python(x,v,m,dt,twopiG=1.):
         yindx= numpy.argsort(i)
         yield (x[yindx],v[yindx])
 
-def _nbody_approx(x,v,m,dt,nleap,omega=None,twopiG=1.,full_output=False):
+def _nbody_approx(x,v,m,dt,nleap,t0=0.,omega=None,ext_force=None,sort='quick',
+                  twopiG=1.,full_output=False):
     """
     NAME:
        _nbody_approx
@@ -325,48 +346,91 @@ def _nbody_approx(x,v,m,dt,nleap,omega=None,twopiG=1.,full_output=False):
        m - masses [N]
        dt - output time step
        nleap - number of leapfrog steps / output time step
+       t0= (0.) initial time (only important when using a time-dependent, external force) 
        omega= (None) if set, frequency of external harmonic oscillator
+       ext_force= (None) if set, a function F(x,t) that represents an external force as a function of position x and time t; only for approx=True
+       sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort, 'tim' for timsort, 'qsort' for stdlib's qsort, 'parallel' for a parallel sort)
        twopiG= (1.) value of 2 \pi G
        full_output= (False) if True, also yield diagnostic information: (a) time elapsed for integrating this timestep (*not* cumulative)
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
     HISTORY:
        2017-06-03 - Written - Bovy (UofT/CCA)
+       2019-04-29 - Add 'sort' option - Bovy (UofT)
+       2019-05-20 - Added parallel sort option - Bovy (UofT)
+       2019-08-22 - Added ext_force option - Bovy (UofT)      
     """
     if omega is None:
         omega2= -1.
     else:
         omega2= omega**2.
     # Prepare for C
+    N= len(x)
     x= copy.copy(x)
     v= copy.copy(v)
     m= twopiG*copy.copy(m)
-    cumulmass= numpy.zeros(len(x))
-    revcumulmass= numpy.zeros(len(x))
+    cumulmass= numpy.zeros(N)
     err= ctypes.c_int(0)
+    t0= ctypes.c_double(t0)
     #Array requirements
     x= numpy.require(x,dtype=numpy.float64,requirements=['C','W'])
     v= numpy.require(v,dtype=numpy.float64,requirements=['C','W'])
-    a= numpy.require(numpy.zeros(len(x)),
+    a= numpy.require(numpy.zeros(N),
                      dtype=numpy.float64,requirements=['C','W'])
     m= numpy.require(m,dtype=numpy.float64,requirements=['C','W'])
     cumulmass= numpy.require(cumulmass,
                              dtype=numpy.float64,requirements=['C','W'])
-    revcumulmass= numpy.require(revcumulmass,
-                                dtype=numpy.float64,requirements=['C','W'])
-    xi= (array_w_index * len(x))()
-    for ii in range(len(x)):
+    totmass= numpy.sum(m)
+    xi= (array_w_index * N)()
+    for ii in range(N):
         xi[ii].idx= ctypes.c_int(ii)
         xi[ii].val= ctypes.c_double(x[ii])
+    # Setup external force
+    if not ext_force is None:
+        try: # try using numba to speed up simple external forces
+            c_sig= types.double(types.intc,
+                                types.CPointer(types.double),
+                                types.double,
+                                types.CPointer(types.double))
+            ext_force_4c= cfunc(types.double(types.double,types.double),
+                                nopython=True)(ext_force).ctypes
+            def ext_force_arrays(N,x,t,a): # pragma: no cover
+                # no cover, bc cannot be directly accessed (compiled into bytecode)
+                if N == 1: # 1 point, return value
+                    return ext_force_4c(x[0],t)
+                for ii in range(N): # multiple points, store in a
+                    a[ii]= ext_force_4c(x[ii],t)
+                return 0.
+            ext_force_c= cfunc(c_sig,nopython=True)(ext_force_arrays).ctypes
+        except: # Any Exception, switch to regular ctypes wrapping
+            ext_force_ctype= ctypes.CFUNCTYPE(ctypes.c_double,# double rettype
+                                              ctypes.c_int,   # N
+                                              c_double_p,     # *x
+                                              ctypes.c_double,#  t
+                                              c_double_p)     # *a
+            def ext_force_arrays(N,x,t,a):
+                if N == 1:
+                    return ext_force(x.contents.value,t)
+                x= as_array(x,shape=(N,))
+                a= as_array(a,shape=(N,))
+                a[:]= ext_force(x,t)
+                return 0.
+            ext_force_c= ext_force_ctype(ext_force_arrays)
+    else:
+        ext_force_c= None
     # Leapfrog integration
     dt_leap= dt/nleap
     time_elapsed= ctypes.c_double(0)
     while True:
-        _wendy_nbody_approx_onestep_func(len(x),ctypes.pointer(xi[0]),
-                                         x,v,m,a,dt_leap,nleap,omega2,
+        _wendy_nbody_approx_onestep_func(N,ctypes.pointer(xi[0]),x,v,m,a,
+                                         totmass,dt_leap,nleap,
+                                         ctypes.byref(t0),
+                                         omega2,
+                                         ext_force_c,
+                                         _sort_type_dict[sort],
                                          ctypes.byref(err),
                                          ctypes.byref(time_elapsed),
-                                         cumulmass,revcumulmass)
+                                         cumulmass)
         if full_output:
             yield(x,v,time_elapsed.value)
         else:

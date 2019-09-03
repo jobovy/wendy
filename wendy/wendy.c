@@ -7,6 +7,29 @@
 #include <time.h>
 #include <wendy.h>
 #include <bst.h>
+#include <parallel_sort.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_wtime() (clock()*1./CLOCKS_PER_SEC)
+#endif
+
+// functionality to perform argsort in approximate solver
+#define SORT_NAME argsort
+#define SORT_TYPE struct array_w_index
+#define SORT_CMP(x,y) ( ( ((x).val) < ((y).val) ) ? -1: ( ( ((x).val) > ((y).val) ) ? 1: 0 ) )
+#include <sort.h>
+
+// For parallel_sort, need standard (qsort-like) comparison function
+int argsort_compare_function(const void *a,const void *b) {
+  struct array_w_index *x = (struct array_w_index *) a;
+  struct array_w_index *y = (struct array_w_index *) b;
+  if (x->val < y->val) return -1;
+  else if (x->val > y->val) return 1; 
+  else return 0;
+}
+
 double _solve_coll_quad(double c0, double c1, double c2){
   // Solves for collisions under quadratic motion: a t^2/2 + vt + x
   double mba;
@@ -38,12 +61,10 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   double dv,tdt, dm, tmpd;
   struct node* minNode;
   double * t= (double *) malloc ( N * sizeof(double) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
   cnt_coll= 0;
   // Build binary search tree for keeping track of collision times
   int * idx= (int *) malloc ( (N-1) * sizeof(int) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) *(idx+ii)= ii;
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
@@ -126,14 +147,12 @@ void _wendy_nbody_onestep(int N, double * x, double * v, double * a,
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot
-#pragma omp parallel for schedule(static,chunk) private(ii,tdt,dv)
   for (ii=0; ii < N; ii++) {
     tdt= dt - *(t+ii);
     dv= *(a+ii) * tdt;
     *(x+ii)+= dv * tdt / 2. + *(v+ii) * tdt;
     *(v+ii)+= dv;
   }
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) {
     *(tcoll+ii)-= dt;
   }
@@ -157,12 +176,10 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
   double tdt, dm, tmpd, cosot, sinot;
   struct node* minNode;
   double * t= (double *) malloc ( N * sizeof(double) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N; ii++) *(t+ii)= 0.;
   cnt_coll= 0;
   // Build binary search tree for keeping track of collision times
   int * idx= (int *) malloc ( (N-1) * sizeof(int) );
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) *(idx+ii)= ii;
   struct node* bst_tcoll= bst_build(N-1,idx,tcoll);
   free(idx);
@@ -278,7 +295,6 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
   //printf("Next %f\n",*next_tcoll-dt);
   //fflush(stdout);
   // Update all to next snapshot
-#pragma omp parallel for schedule(static,chunk) private(ii,tdt,dv,cosot,sinot,tmpd)
   for (ii=0; ii < N; ii++) {
     tdt= dt - *(t+ii);
     sinot = sin( omega * tdt );
@@ -287,7 +303,6 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
     *(x+ii)= tmpd * cosot + *(v+ii) / omega * sinot + *(a+ii);
     *(v+ii)= -tmpd * omega * sinot + *(v+ii) * cosot;
   }
-#pragma omp parallel for schedule(static,chunk) private(ii)
   for (ii=0; ii < N-1; ii++) {
     *(tcoll+ii)-= dt;
   }
@@ -302,6 +317,7 @@ void _wendy_nbody_harm_onestep(int N, double * x, double * v, double * a,
 // Approximate solution using leapfrog integration w/ exact forces
 void leapfrog_leapq(int N, struct array_w_index *xi,double *v,double dt){
   int ii;
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii < N; ii++)
     (xi+ii)->val+= dt * *(v + (xi+ii)->idx);
 }
@@ -309,59 +325,94 @@ void leapfrog_leappq(int N, struct array_w_index * xi,
 		     double *v,double dt_kick,double dt_drift,
 		     double *a){
   int ii;
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii< N; ii++) {
     *(v + (xi+ii)->idx)+= dt_kick * *(a + (xi+ii)->idx);
     (xi+ii)->val+= dt_drift * *(v + (xi+ii)->idx);
   }
 }
-int argsort_compare_function(const void *a,const void *b) {
-  struct array_w_index *x = (struct array_w_index *) a;
-  struct array_w_index *y = (struct array_w_index *) b;
-  if (x->val < y->val) return -1;
-  else if (x->val > y->val) return 1; 
-  else return 0;
-}
-void _nbody_force(int N, struct array_w_index * xi, double * m, double * a,
-		  double omega2, double * cumulmass,double * revcumulmass){
+void _nbody_force(int N, int sort_type,
+		  struct array_w_index * xi, double * x,double * m, double * a,
+		  double t, double totmass, double omega2,
+		  double (*ext_force)(int N,double *x, double t, double *a),
+		  double * cumulmass){
   int ii;
   // argsort
-  qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
-  // Compute cumulative mass
+  switch ( sort_type ) {
+  case 0:
+    argsort_quick_sort(xi,N);
+    break;
+  case 1:
+    argsort_merge_sort(xi,N);
+    break;
+  case 2:
+    argsort_tim_sort(xi,N);
+    break;
+  case 3:
+    qsort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
+  case 4:
+    parallel_sort(xi,N,sizeof(struct array_w_index),argsort_compare_function);
+    break;
+  }
+  // Compute cumulative mass and acceleration
   for (ii=0; ii< N-1; ii++)
     *(cumulmass+ii+1)= *(cumulmass+ii) + *(m+(xi+ii)->idx); 
-  // Now compute acceleration from reverse-cumulative mass
-  for (ii=0; ii< N-1; ii++)
-    *(revcumulmass+N-ii-2)= *(revcumulmass+N-ii-1) + *(m+(xi+N-ii-1)->idx);
-  if ( omega2 < 0 )
+  // Evaluate external force
+  if ( ext_force && N > EXTERNAL_SWITCH ) {
+    // Need to de-sort to pass x to ext_force's array calculation
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii);
+      *(x+(xi+ii)->idx)= (xi+ii)->val;
+    ext_force(N,x,t,a);
+  } else if ( ext_force ) // for < EXTERNAL_SWITCH, use sequential evaluation
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)= ext_force(1,&(xi+ii)->val,t,NULL);
   else
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
     for (ii=0; ii< N; ii++)
-      *(a + (xi+ii)->idx)= *(revcumulmass+ii) - *(cumulmass+ii) \
-	- omega2 * (xi+ii)->val;
+      *(a+ii)= 0.;
+  if ( omega2 < 0 )
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)+= totmass - 2 * *(cumulmass+ii) - *(m+(xi+ii)->idx);
+  else
+    #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
+    for (ii=0; ii< N; ii++)
+      *(a + (xi+ii)->idx)+= totmass - 2 * *(cumulmass+ii) \
+	- *(m+(xi+ii)->idx) - omega2 * (xi+ii)->val;
 }
 void _wendy_nbody_approx_onestep(int N, struct array_w_index * xi, 
 				 double * x, double * v, 
-				 double * m, double * a,
-				 double dt, int nleap, double omega2,
+				 double * m, double * a, double totmass,
+				 double dt, int nleap, double * t0,
+				 double omega2,
+				 double (*ext_force)(int,double *x, double t,double *a),
+				 int sort_type,
 				 int * err,double * time_elapsed,
-				 double * cumulmass, double * revcumulmass){
+				 double * cumulmass){
   int ii;
-  clock_t time_begin= clock();
+  double time_begin, time_end;
+  time_begin= omp_get_wtime();
   //drift half
   leapfrog_leapq(N,xi,v,dt/2.);
   //now drift full for a while
   for (ii=0; ii < (nleap-1); ii++){
     //kick+drift
-    _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
+    _nbody_force(N,sort_type,xi,x,m,a,*t0,totmass,omega2,*ext_force,cumulmass);
+    if ( ext_force )
+      *t0+= dt;
     leapfrog_leappq(N,xi,v,dt,dt,a);
   }
   //end with one last kick and drift
-  _nbody_force(N,xi,m,a,omega2,cumulmass,revcumulmass);
+  _nbody_force(N,sort_type,xi,x,m,a,*t0,totmass,omega2,*ext_force,cumulmass);
+  if ( ext_force )
+    *t0+= dt;
   leapfrog_leappq(N,xi,v,dt,dt/2.,a);
   //de-sort
+  #pragma omp parallel for schedule(static,CHUNK_PARALLEL_LEAPFROG) private(ii)
   for (ii=0; ii< N; ii++)
     *(x+(xi+ii)->idx)= (xi+ii)->val;
-  clock_t time_end= clock();
-  *time_elapsed= (double) (time_end-time_begin) / CLOCKS_PER_SEC;
+  time_end= omp_get_wtime();
+  *time_elapsed= time_end-time_begin;
 }
