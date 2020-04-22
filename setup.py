@@ -2,6 +2,12 @@ import sys
 from setuptools import setup
 from distutils.core import Extension
 
+long_description= ''
+previous_line= ''
+with open('README.md') as dfile:
+    for line in dfile:
+        long_description+= line
+
 libraries= ['m']
 
 #Option to forego OpenMP
@@ -27,6 +33,8 @@ else:
 setup(name='wendy',
       version='0.2',
       description='One-dimensional gravitational N-body code',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Jo Bovy',
       author_email='bovy@astro.utoronto.ca',
       license='MIT',
