@@ -1,8 +1,6 @@
 2020-04-21: v0.2
 =================
 
-- First PyPI  release
-
 - Added different options for performing the necessary sort in the
   approximate version of the algorithm: mergesort, quicksort, timsort,
   as well as a parallel mergesort (which is, however, not very
