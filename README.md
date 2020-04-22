@@ -4,6 +4,7 @@ A one-dimensional gravitational N-body code.
 
 [![Build Status](https://travis-ci.org/jobovy/wendy.svg?branch=master)](https://travis-ci.org/jobovy/wendy)
 [![Coverage Status](https://codecov.io/gh/jobovy/wendy/branch/master/graph/badge.svg)](https://codecov.io/gh/jobovy/wendy)
+[![image](http://img.shields.io/pypi/v/wendy.svg)](https://pypi.python.org/pypi/wendy/)
 [![Binder](http://mybinder.org/badge.svg)](http://beta.mybinder.org/repo/jobovy/wendy)
 
 ## Overview
