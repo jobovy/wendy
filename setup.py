@@ -6,6 +6,7 @@ long_description= ''
 previous_line= ''
 with open('README.md') as dfile:
     for line in dfile:
+        if '[!' in line: continue
         long_description+= line
 
 libraries= ['m']
