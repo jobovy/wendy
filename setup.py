@@ -25,7 +25,7 @@ else:
     extra_link_args= ["--coverage"]
 
 setup(name='wendy',
-      version='0.1',
+      version='0.2',
       description='One-dimensional gravitational N-body code',
       author='Jo Bovy',
       author_email='bovy@astro.utoronto.ca',
