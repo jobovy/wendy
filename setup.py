@@ -32,7 +32,7 @@ else:
     extra_link_args= ["--coverage"]
 
 setup(name='wendy',
-      version='0.2',
+      version='0.3.dev',
       description='One-dimensional gravitational N-body code',
       long_description=long_description,
       long_description_content_type='text/markdown',
