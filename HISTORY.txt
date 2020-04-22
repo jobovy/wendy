@@ -1,3 +1,20 @@
+2020-04-21: v0.2
+=================
+
+- First PyPI  release
+
+- Added different options for performing the necessary sort in the
+  approximate version of the algorithm: mergesort, quicksort, timsort,
+  as well as a parallel mergesort (which is, however, not very
+  efficient).
+
+- Added option to add an arbitrary external force F(x,t) to the
+  approximate version of the algorithm.
+
+- Added an example of using wendy to generate a phase-space spiral
+  similar to that observed by Gaia, through a simple perturbation of
+  the Galactic disk (examples/GaiaPhaseSpaceSpiral.ipynb).
+
 2017-06-11: v0.1
 =================
 
