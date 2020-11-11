@@ -11,6 +11,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
+    env:
+      PYTHON_COVREPORTS_VERSION: 3.8
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -22,7 +24,7 @@ jobs:
          wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
          tar xf lcov_1.11.orig.tar.gz
          mkdir $HOME/usr
-         echo "PATH=$HOME/usr/bin:$PATH" >> $GITHUB_ENV
+         echo "$HOME/usr/bin" >> $GITHUB_PATH
          make -C lcov-1.11/ install PREFIX=$HOME
     - name: Install test coverage dependencies
       run: |
@@ -37,7 +39,9 @@ jobs:
       run: |
         pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
     - name: Generate code coverage
+      if: ${{ matrix.python-version == PYTHON_COVREPORTS_VERSION }} 
       run: |
         lcov --capture --base-directory . --directory build/temp.linux-x86_64-$PYTHON_COVREPORTS_VERSION/wendy/ --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
+      if: ${{ matrix.python-version == PYTHON_COVREPORTS_VERSION }}
       uses: codecov/codecov-action@v1
