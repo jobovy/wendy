@@ -23,9 +23,7 @@ jobs:
       run: |
          wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
          tar xf lcov_1.11.orig.tar.gz
-         mkdir $HOME/usr
-         echo "$HOME/usr/bin" >> $GITHUB_PATH
-         make -C lcov-1.11/ install PREFIX=$HOME
+         sudo make -C lcov-1.11/ install
     - name: Install test coverage dependencies
       run: |
         python -m pip install --upgrade pip
