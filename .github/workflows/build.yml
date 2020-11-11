@@ -27,7 +27,8 @@ jobs:
     - name: Install test coverage dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install coverage pytest-cov
+        pip install 'coverage==4.1' --force-reinstall
+        pip install pytest-cov
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
