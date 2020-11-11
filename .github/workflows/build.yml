@@ -39,9 +39,9 @@ jobs:
       run: |
         pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
     - name: Generate code coverage
-      if: ${{ matrix.python-version == PYTHON_COVREPORTS_VERSION }} 
+      if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }} 
       run: |
         lcov --capture --base-directory . --directory build/temp.linux-x86_64-$PYTHON_COVREPORTS_VERSION/wendy/ --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
-      if: ${{ matrix.python-version == PYTHON_COVREPORTS_VERSION }}
+      if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
       uses: codecov/codecov-action@v1
