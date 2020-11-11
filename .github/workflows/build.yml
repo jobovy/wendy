@@ -21,9 +21,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install lcov
       run: |
-         wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
-         tar xf lcov_1.11.orig.tar.gz
-         sudo make -C lcov-1.11/ install
+         wget http://downloads.sourceforge.net/ltp/lcov-1.14.tar.gz
+         tar xf lcov-1.14.tar.gz
+         sudo make -C lcov-1.14/ install
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
@@ -32,7 +32,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest-cov
-        pytest -v tests/ --cov wendy --cov-config .coveragerc_travis
+        pytest -v tests/ --cov wendy --cov-config .coveragerc
     - name: Generate code coverage
       if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }} 
       run: |
