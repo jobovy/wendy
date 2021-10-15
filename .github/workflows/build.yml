@@ -28,7 +28,6 @@ jobs:
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
-        pip install numpy
         python setup.py build_ext --coverage --inplace
         python setup.py develop
     - name: Test with pytest
