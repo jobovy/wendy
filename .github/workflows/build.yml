@@ -33,7 +33,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest-cov
-        pytest -v tests/ --cov wendy --cov-config .coveragerc
+        pytest -v tests/ --cov wendy --cov-config .coveragerc --cov-report=term --cov-report=xml
     - name: Generate code coverage
       if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }} 
       run: |
