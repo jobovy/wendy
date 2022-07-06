@@ -15,9 +15,9 @@ jobs:
     env:
       PYTHON_COVREPORTS_VERSION: 3.9
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install lcov
@@ -25,6 +25,10 @@ jobs:
          wget http://downloads.sourceforge.net/ltp/lcov-1.14.tar.gz
          tar xf lcov-1.14.tar.gz
          sudo make -C lcov-1.14/ install
+    - name: Install numpy
+      if: ${{ matrix.python-version == "3.10" }}
+      run: |
+        pip install numpy
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
@@ -40,4 +44,4 @@ jobs:
         lcov --capture --base-directory . --directory build/temp.linux-x86_64-$PYTHON_COVREPORTS_VERSION/wendy/ --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
       if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
