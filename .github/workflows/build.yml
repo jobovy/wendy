@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8,3.9,"3.10"]
+        python-version: [3.8,3.9]
     env:
       PYTHON_COVREPORTS_VERSION: 3.9
     steps:
@@ -25,10 +25,6 @@ jobs:
          wget http://downloads.sourceforge.net/ltp/lcov-1.14.tar.gz
          tar xf lcov-1.14.tar.gz
          sudo make -C lcov-1.14/ install
-    - name: Install numpy
-      if: ${{ matrix.python-version == 3.10 }}
-      run: |
-        pip install numpy cython
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
