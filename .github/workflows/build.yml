@@ -26,7 +26,7 @@ jobs:
          tar xf lcov-1.14.tar.gz
          sudo make -C lcov-1.14/ install
     - name: Install numpy
-      if: ${{ matrix.python-version == "3.10" }}
+      if: ${{ matrix.python-version == 3.10 }}
       run: |
         pip install numpy
     - name: Install package
