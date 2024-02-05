@@ -1,4 +1,4 @@
-numpy<1.23
+numpy<1.27
 matplotlib
 ipython
 numba<0.57
