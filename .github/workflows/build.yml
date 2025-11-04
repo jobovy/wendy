@@ -38,6 +38,7 @@ jobs:
       if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }} 
       run: |
         BUILD_DIR=$(find build -type d -name "wendy" -path "build/temp.*/wendy" | head -n 1)
+        if [ -z "$BUILD_DIR" ]; then echo "Error: wendy build directory not found" && exit 1; fi
         lcov --capture --base-directory . --directory "$BUILD_DIR" --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
       if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
