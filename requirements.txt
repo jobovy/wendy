@@ -1,5 +1,5 @@
-numpy<1.23
+numpy
 matplotlib
 ipython
-numba<0.57
+numba
 tqdm
