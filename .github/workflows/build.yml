@@ -27,6 +27,7 @@ jobs:
          sudo make -C lcov-1.15/ install
     - name: Install package
       run: |
+        pip install setuptools
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
         python setup.py build_ext --coverage --inplace
         python setup.py develop

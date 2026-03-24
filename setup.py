@@ -1,6 +1,5 @@
 import sys
-from setuptools import setup
-from distutils.core import Extension
+from setuptools import setup, Extension
 
 long_description= ''
 previous_line= ''
