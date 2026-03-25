@@ -8,12 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       matrix:
-        python-version: [3.8,3.9]
+        python-version: ["3.12","3.13"]
+        os: [ubuntu-latest, macos-latest]
     env:
-      PYTHON_COVREPORTS_VERSION: 3.9
+      PYTHON_COVREPORTS_VERSION: "3.13"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -21,6 +24,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install lcov
+      if: runner.os == 'Linux'
       run: |
          wget https://github.com/linux-test-project/lcov/releases/download/v1.15/lcov-1.15.tar.gz
          tar xf lcov-1.15.tar.gz
@@ -28,14 +32,22 @@ jobs:
     - name: Install package
       run: |
         export CFLAGS="-D PARALLEL_SERIAL_SORT_SWITCH=10 -D PARALLEL_SERIAL_MERGE_SWITCH=10 -D PARALLEL_SORT_NUM_THREADS=2"
-        python setup.py build_ext --coverage --inplace
-        python setup.py develop
+        pip install .
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          pip install setuptools
+          python setup.py build_ext --coverage --inplace
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+        fi
     - name: Test with pytest
       run: |
         pip install pytest-cov
-        pytest -v tests/ --cov wendy --cov-config .coveragerc --cov-report=term --cov-report=xml
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          pytest -v tests/ --cov wendy --cov-config .coveragerc --cov-report=term --cov-report=xml
+        else
+          pytest -v tests/
+        fi
     - name: Generate code coverage
-      if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }} 
+      if: ${{ runner.os == 'Linux' && matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
       run: |
         BUILD_DIR=$(find build -type d -name "wendy" -path "build/temp.*/wendy" | head -n 1)
         if [ -z "$BUILD_DIR" ]; then 
@@ -46,7 +58,7 @@ jobs:
         fi
         lcov --capture --base-directory . --directory "$BUILD_DIR" --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
-      if: ${{ matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
+      if: ${{ runner.os == 'Linux' && matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}

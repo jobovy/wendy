@@ -13,11 +13,7 @@ from numba import types, cfunc
 #Find and load the library
 _lib= None
 outerr= None
-PY3= sys.version > '3'
-if PY3:
-    _ext_suffix= sysconfig.get_config_var('EXT_SUFFIX')
-else: # pragma: no cover
-    _ext_suffix= '.so'
+_ext_suffix= sysconfig.get_config_var('EXT_SUFFIX')
 for path in sys.path:
     try:
         _lib = ctypes.CDLL(os.path.join(path,'wendy_c%s' % _ext_suffix))
@@ -124,7 +120,7 @@ def nbody(x,v,m,dt,t0=0.,twopiG=1.,omega=None,ext_force=None,
        m - masses [N]
        dt - time step
        t0= (0.) initial time (only important when using a time-dependent, external force)
-       twopiG= (1.) value of 2 \pi G
+       twopiG= (1.) value of 2π G
        omega= (None) if set, frequency of external harmonic oscillator: Phi(x) = omega^2 x^2/2
        ext_force= (None) if set, a function F(x,t) that represents an external force as a function of position x and time t; only for approx=True
        approx= (False) if True, solve the dynamics approximately using leapfrog with exact force evaluations
@@ -248,7 +244,7 @@ def nbody_python(x,v,m,dt,twopiG=1.):
        v - velocities [N]
        m - masses [N]
        dt - time step
-       twopiG= (1.) value of 2 \pi G
+       twopiG= (1.) value of 2π G
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
     HISTORY:
@@ -350,7 +346,7 @@ def _nbody_approx(x,v,m,dt,nleap,t0=0.,omega=None,ext_force=None,sort='quick',
        omega= (None) if set, frequency of external harmonic oscillator
        ext_force= (None) if set, a function F(x,t) that represents an external force as a function of position x and time t; only for approx=True
        sort= ('quick') type of sort to use when approx == True ('quick' for quicksort, 'merge' for mergesort, 'tim' for timsort, 'qsort' for stdlib's qsort, 'parallel' for a parallel sort)
-       twopiG= (1.) value of 2 \pi G
+       twopiG= (1.) value of 2π G
        full_output= (False) if True, also yield diagnostic information: (a) time elapsed for integrating this timestep (*not* cumulative)
     OUTPUT:
        Generator: each iteration returns (x,v) at equally-spaced time intervals
@@ -446,7 +442,7 @@ def energy(x,v,m,twopiG=1.,individual=False,omega=None):
        x - positions [N]
        v - velocities [N]
        m - masses [N]
-       twopiG= (1.) value of 2 \pi G
+       twopiG= (1.) value of 2π G
        individual= (False) if True, return each particle's individual energy (note: individual energies don't add up to the system's energy)
        omega= (None) if set, frequency of external harmonic oscillator
     OUTPUT:
@@ -501,7 +497,7 @@ def potential(y,x,v,m,twopiG=1.,omega=None):
        x - positions of N-body particles [N]
        v - velocities of N-body particles [N]
        m - masses of N-body particles [N]
-       twopiG= (1.) value of 2 \pi G
+       twopiG= (1.) value of 2π G
        omega= (None) if set, frequency of external harmonic oscillator
     OUTPUT:
        potential(y)
