@@ -59,6 +59,6 @@ jobs:
         lcov --capture --base-directory . --directory "$BUILD_DIR" --no-external --output-file coverage_full.info
     - name: Upload coverage reports to codecov
       if: ${{ runner.os == 'Linux' && matrix.python-version == env.PYTHON_COVREPORTS_VERSION }}
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
